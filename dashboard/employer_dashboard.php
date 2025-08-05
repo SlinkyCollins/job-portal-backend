@@ -1,13 +1,8 @@
 <?php
 require '../connect.php';
 session_start();
-
 $timeout_duration = 1800;
-
-header('Access-Control-Allow-Origin: http://localhost:4200');
-header('Access-Control-Allow-Credentials: true');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Content-Type: application/json');
+require_once '../headers.php';
 
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout_duration) {
     session_unset();

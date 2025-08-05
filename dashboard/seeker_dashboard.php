@@ -1,15 +1,9 @@
 <?php
 require '../connect.php';
 session_start();
-
 // Set session timeout (in seconds)
 $timeout_duration = 1800;  // 30 minutes
-
-// Allow CORS for Angular frontend
-header('Access-Control-Allow-Origin: http://localhost:4200');
-header('Access-Control-Allow-Credentials: true');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Content-Type: application/json');
+require_once '../headers.php';
 
 // Check for session timeout
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout_duration) {

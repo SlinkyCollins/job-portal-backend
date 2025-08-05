@@ -1,17 +1,6 @@
 <?php
 session_start();
-
-header('Access-Control-Allow-Origin: http://localhost:4200');  // Allow requests from your Angular app
-header('Access-Control-Allow-Credentials: true');  // Allow sending cookies (important for sessions)
-header('Access-Control-Allow-Methods: POST, OPTIONS');  // Restrict to POST for logout
-header('Access-Control-Allow-Headers: Content-Type');  // Handle JSON content
-header('Content-Type: application/json');  // Set JSON response type
-
-// Handle preflight (CORS) requests
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+require_once 'headers.php';
 
 // Clear session data
 $_SESSION = [];
