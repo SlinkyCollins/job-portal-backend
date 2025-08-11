@@ -43,6 +43,20 @@ if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'job_seeker') {
     $checkStmt->close();
 }
 
+// If logged in and role is job_seeker, check if job is already saved
+if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'job_seeker') {
+    $user_id = $_SESSION['user']['id'];
+    $checkQuery = "SELECT id FROM saved_jobs_table WHERE job_id = ? AND user_id = ?";
+    $checkStmt = $dbconnection->prepare($checkQuery);
+    $checkStmt->bind_param('ii', $jobId, $user_id);
+    $checkStmt->execute();
+    $checkStmt->store_result();
+    if ($checkStmt->num_rows > 0) {
+        $job['isSaved'] = true;
+    }
+    $checkStmt->close();
+}
+
 // Send final JSON once
 echo json_encode(['status' => true, 'job' => $job]);
 
