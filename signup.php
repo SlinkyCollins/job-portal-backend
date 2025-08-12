@@ -8,6 +8,7 @@ $lastname = $data->lname;
 $email = strtolower($data->mail);
 $userpassword = $data->pword;
 $userRole = $data->role;
+$terms = $data->terms;
 
 if (strlen($userpassword) < 6) {
     $response = [
@@ -36,9 +37,9 @@ if ($execute) {
     } else {
         $hash = password_hash($userpassword, PASSWORD_DEFAULT);
 
-        $query = "INSERT INTO users_table (firstname, lastname, email, password, role) VALUES (?, ?, ?, ?, ?)";
+        $query = "INSERT INTO users_table (firstname, lastname, email, password, role, terms) VALUES (?, ?, ?, ?, ?, ?)";
         $prepare = $dbconnection->prepare($query);
-        $prepare->bind_param('sssss', $firstname, $lastname, $email, $hash, $userRole);
+        $prepare->bind_param('sssssi', $firstname, $lastname, $email, $hash, $userRole, $terms);
         $execute = $prepare->execute();
 
         if ($execute) {
