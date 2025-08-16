@@ -1,0 +1,14 @@
+{
+    "name": "collynx/jobnet-backend",
+    "description": "JobNet PHP backend for Firebase auth",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ademola Afolabi",
+            "email": "afolabiademola27@gmail.com"
+        }
+    ],
+    "require": {
+        "kreait/firebase-php": "^5.26"
+    }
+}
