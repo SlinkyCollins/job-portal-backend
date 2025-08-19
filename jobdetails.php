@@ -1,7 +1,7 @@
 <?php
+require 'session_config.php';
 require 'connect.php';
 require_once 'headers.php';
-session_start();
 
 $jobId = isset($_GET['id']) ? intval($_GET['id']) : null;
 

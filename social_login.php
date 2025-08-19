@@ -1,8 +1,8 @@
 <?php
+require 'session_config.php';
 require 'connect.php';
 require 'vendor/autoload.php';
 require_once 'headers.php';
-session_start();
 
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Auth as FirebaseAuth;

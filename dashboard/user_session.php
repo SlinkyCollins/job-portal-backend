@@ -1,6 +1,6 @@
 <?php
+require '../session_config.php';
 require '../connect.php';
-session_start();
 require_once '../headers.php';
 
 $response = [];

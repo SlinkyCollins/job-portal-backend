@@ -1,6 +1,6 @@
 <?php
+require '../session_config.php';
 require '../connect.php';
-session_start();
 $timeout_duration = 1800;
 require_once '../headers.php';
 
