@@ -3,6 +3,8 @@ $allowedOrigins = ['http://localhost:4200', 'https://jobnet.vercel.app', 'https:
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowedOrigins)) {
     header("Access-Control-Allow-Origin: $origin");
+} else {
+    header("Access-Control-Allow-Origin: https://jobnet.vercel.app"); // Default to prod
 }
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Headers: Content-Type, Authorization'); 

@@ -3,6 +3,8 @@ require '../session_config.php';
 require '../connect.php';
 require_once '../headers.php';
 
+header("Set-Cookie: JobNetSession=" . session_id() . "; path=/JobPortal; SameSite=None; Secure; HttpOnly");
+
 $response = [];
 
 if (!isset($_SESSION['user']) || empty($_SESSION['user'])) {
