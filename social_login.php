@@ -39,6 +39,7 @@ try {
 
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
+        session_regenerate_id(true);
         $_SESSION['user'] = ['id' => $user['user_id'], 'role' => $user['role']];
         echo json_encode(['status' => true, 'user' => $_SESSION['user']]);
     } else {
