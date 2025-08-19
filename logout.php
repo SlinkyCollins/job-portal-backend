@@ -1,6 +1,6 @@
 <?php
-require 'session_config.php';
 require_once 'headers.php';
+require 'session_config.php';
 header("Set-Cookie: JobNetSession=" . session_id() . "; path=/JobPortal; SameSite=None; Secure; HttpOnly");
 
 // Clear session data

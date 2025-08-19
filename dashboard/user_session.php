@@ -1,7 +1,7 @@
 <?php
+require_once '../headers.php';
 require '../session_config.php';
 require '../connect.php';
-require_once '../headers.php';
 
 header("Set-Cookie: JobNetSession=" . session_id() . "; path=/JobPortal; SameSite=None; Secure; HttpOnly");
 

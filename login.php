@@ -1,7 +1,7 @@
 <?php
+require_once 'headers.php';
 require 'session_config.php';
 require 'connect.php';
-require_once 'headers.php';
 
 
 $data = json_decode(file_get_contents("php://input"));

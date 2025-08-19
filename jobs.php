@@ -1,6 +1,6 @@
 <?php
-require 'connect.php';
 require_once 'headers.php';
+require 'connect.php';
 
 $response = [];
 

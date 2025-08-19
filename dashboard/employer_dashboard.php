@@ -1,8 +1,8 @@
 <?php
+require_once '../headers.php';
 require '../session_config.php';
 require '../connect.php';
 $timeout_duration = 1800;
-require_once '../headers.php';
 
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout_duration) {
     session_unset();

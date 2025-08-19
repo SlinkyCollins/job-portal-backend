@@ -1,7 +1,7 @@
 <?php
+require_once 'headers.php';
 require 'session_config.php';
 require 'connect.php';
-require_once 'headers.php';
 
 // Check login
 if (!isset($_SESSION['user'])) {
