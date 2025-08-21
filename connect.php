@@ -1,11 +1,11 @@
 <?php
-$localhost='localhost';
-$username='root';
-$password='';
-$db='jobportal_db';
+$host= getenv("DB_HOST");
+$username= getenv("DB_USER");
+$password= getenv("DB_PASS");
+$db= getenv("DB_NAME");
 
 
-$dbconnection = new mysqli($localhost, $username, $password, $db);
+$dbconnection = new mysqli($host, $username, $password, $db);
 
 if ($dbconnection->connect_error) {
     echo 'not connected'.$dbconnection->connect_error;
