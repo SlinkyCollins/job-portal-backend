@@ -25,7 +25,7 @@ if (!$dbconnection->real_connect($host, $user, $pass, $db, $port, NULL, MYSQLI_C
     die('Connection failed: ' . mysqli_connect_error());
 }
 
-echo "✅ Connected successfully to Aiven MySQL with SSL!";
+// echo "✅ Connected successfully to Aiven MySQL with SSL!";
 
 // --- OPTIONAL TEST QUERY ---
 // $result = $dbconnection->query("SHOW TABLES");
