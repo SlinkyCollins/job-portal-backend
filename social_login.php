@@ -17,7 +17,7 @@ if (!$token) {
     exit;
 }
 
-$factory = (new Factory)->withServiceAccount('jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
+$factory = (new Factory)->withServiceAccount(__DIR__ . '/config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
 $auth = $factory->createAuth();
 
 try {

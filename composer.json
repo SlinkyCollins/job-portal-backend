@@ -9,6 +9,7 @@
         }
     ],
     "require": {
-        "kreait/firebase-php": "^5.26"
+        "kreait/firebase-php": "^5.26",
+        "vlucas/phpdotenv": "^5.6"
     }
 }
