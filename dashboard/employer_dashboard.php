@@ -4,6 +4,10 @@ require '../session_config.php';
 require '../connect.php';
 $timeout_duration = 1800;
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout_duration) {
     session_unset();
     session_destroy();
@@ -13,6 +17,14 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) >
         'msg' => 'Your session has expired due to inactivity, please log in again'
     ];
     exit();
+}
+
+if (!isset($_SESSION['user']) || !is_array($_SESSION['user']) || empty($_SESSION['user']['id']) || empty($_SESSION['user']['role'])) {
+    session_unset();
+    session_destroy();
+    http_response_code(401);
+    echo json_encode(['status' => false, 'msg' => 'Not authenticated. Please log in again.']);
+    exit;
 }
 
 $_SESSION['last_activity'] = time();
