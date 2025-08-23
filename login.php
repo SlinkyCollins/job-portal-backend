@@ -29,7 +29,7 @@ if ($execute) {
         $verifypassword = password_verify($userpassword, $hashedpassword);
 
         if ($verifypassword) {
-            session_regenerate_id(true);
+            // session_regenerate_id(true);
             $_SESSION['user'] = [
                 'id' => $userID,
                 'role' => $userRole,
