@@ -36,6 +36,7 @@ if ($execute) {
                 'email' => $user['email']
             ];
             $_SESSION['last_activity'] = time();
+            error_log('Login session ID: ' . session_id() . ', User: ' . json_encode($_SESSION['user']));
             http_response_code(200);
             echo json_encode([
                 'status' => true,
