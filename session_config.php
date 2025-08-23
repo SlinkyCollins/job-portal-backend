@@ -12,4 +12,3 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
     header("Set-Cookie: JobNetSession=" . session_id() . "; path=/JobPortal; domain=job-portal-backend-rua3.onrender.com; secure; HttpOnly; SameSite=None");
 }
-?>

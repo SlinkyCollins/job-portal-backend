@@ -68,4 +68,3 @@ if ($execute) {
 echo json_encode($response);
 
 $dbconnection->close();
-?>

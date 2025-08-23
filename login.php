@@ -56,4 +56,3 @@ if ($execute) {
 }
 
 $dbconnection->close();
-?>
