@@ -17,7 +17,10 @@ if (!$token) {
     exit;
 }
 
-$factory = (new Factory)->withServiceAccount(__DIR__ . '/config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv->load();
+
+$factory = (new Factory)->withServiceAccount(json_decode($_ENV['FIREBASE_CREDENTIALS'], true));
 $auth = $factory->createAuth();
 
 try {
