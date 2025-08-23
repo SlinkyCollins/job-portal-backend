@@ -17,10 +17,12 @@ if (!$token) {
     exit;
 }
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
+if (file_exists(__DIR__ . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+    $dotenv->load();
+}
 
-$factory = (new Factory)->withServiceAccount(json_decode($_ENV['FIREBASE_CREDENTIALS'], true));
+$factory = (new Factory)->withServiceAccount(json_decode($_ENV['FIREBASE_CREDENTIALS'] ?? '{}', true));
 $auth = $factory->createAuth();
 
 try {

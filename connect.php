@@ -1,10 +1,12 @@
 <?php
 
 require __DIR__ . '/vendor/autoload.php'; // Composer's autoloader
-use Dotenv\Dotenv;
 
-$dotenv = Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+// Load .env only if it exists (optional for local dev)
+if (file_exists(__DIR__ . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+    $dotenv->load();
+}
 
 // --- CONFIG ---
 $host = $_ENV['DB_HOST'];
@@ -16,17 +18,19 @@ $caCert = __DIR__ . '/certs/ca.pem'; // keep your CA cert in /certs/
 
 // --- MYSQLI CONNECTION WITH SSL ---
 $dbconnection = mysqli_init();
-if (!$dbconnection) die('mysqli_init failed');
-
-$dbconnection->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
-$dbconnection->ssl_set(NULL, NULL, $caCert, NULL, NULL);
-
-if (!$dbconnection->real_connect($host, $user, $pass, $db, $port, NULL, MYSQLI_CLIENT_SSL)) {
-    die('Connection failed: ' . mysqli_connect_error());
+if (!$dbconnection) {
+    error_log('mysqli_init failed');
+    http_response_code(500);
+    echo json_encode(['status' => false, 'msg' => 'Database init failed']);
+    exit;
 }
 
-// echo "✅ Connected successfully to Aiven MySQL with SSL!";
+$dbconnection->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
+$dbconnection->ssl_set(null, null, $caCert, null, null);
 
-// --- OPTIONAL TEST QUERY ---
-// $result = $dbconnection->query("SHOW TABLES");
-// while ($row = $result->fetch_row()) echo $row[0] . "<br>";
+if (!$dbconnection->real_connect($host, $user, $pass, $db, $port, null, MYSQLI_CLIENT_SSL)) {
+    error_log('DB Connection Error: ' . mysqli_connect_error());
+    http_response_code(500);
+    echo json_encode(['status' => false, 'msg' => 'Database connection failed']);
+    exit;
+}
