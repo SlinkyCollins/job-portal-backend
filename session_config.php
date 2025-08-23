@@ -6,7 +6,7 @@ session_set_cookie_params([
     'domain' => 'jobnet.vercel.app',
     'secure' => true,
     'httponly' => true,
-    'samesite' => 'None'
+    'samesite' => 'Lax'
 ]);
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
