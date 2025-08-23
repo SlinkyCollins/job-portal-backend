@@ -23,16 +23,14 @@ if ($execute) {
     $result = $stmt->get_result();
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
-        $userID = $user['user_id'];
-        $userRole = $user['role'];
         $hashedpassword = $user['password'];
         $verifypassword = password_verify($userpassword, $hashedpassword);
 
         if ($verifypassword) {
-            // session_regenerate_id(true);
+            session_regenerate_id(true);
             $_SESSION['user'] = [
-                'id' => $userID,
-                'role' => $userRole,
+                'id' => $user['user_id'],
+                'role' => $user['role'],
                 'email' => $user['email']
             ];
             $_SESSION['last_activity'] = time();
