@@ -5,8 +5,8 @@ require 'connect.php';
 
 
 $data = json_decode(file_get_contents("php://input"));
-$useremail = $data->mail;
-$userpassword = $data->pword;
+$useremail = $data->mail ?? '';
+$userpassword = $data->pword ?? '';
 
 if (!$useremail || !$userpassword) {
     http_response_code(400);
@@ -14,7 +14,7 @@ if (!$useremail || !$userpassword) {
     exit;
 }
 
-$queryemail = "SELECT * FROM users_table WHERE email= ?";
+$queryemail = "SELECT * FROM users_table WHERE email = ?";
 $stmt = $dbconnection->prepare($queryemail);
 $stmt->bind_param('s', $useremail);
 $execute = $stmt->execute();
@@ -28,49 +28,32 @@ if ($execute) {
         $hashedpassword = $user['password'];
         $verifypassword = password_verify($userpassword, $hashedpassword);
 
-        if ($verifypassword){
+        if ($verifypassword) {
             session_regenerate_id(true);
             $_SESSION['user'] = [
                 'id' => $userID,
                 'role' => $userRole,
+                'email' => $user['email']
             ];
+            $_SESSION['last_activity'] = time();
             http_response_code(200);
-            $response = [
+            echo json_encode([
                 'status' => true,
                 'msg' => 'Login successful',
-                'verifypassword' => $verifypassword,
-                'user' => [
-                    'id' => $userID,
-                    'role' => $userRole,
-                ]
-            ];
-            echo json_encode($response);
+                'user' => $_SESSION['user']
+            ]);
         } else {
             http_response_code(401);
-            $response = [
-                'status' => false,
-                'msg' => 'Incorrect password',
-                'verifypassword' => $verifypassword,
-            ];
-            echo json_encode($response);
+            echo json_encode(['status' => false, 'msg' => 'Incorrect password']);
         }
     } else {
         http_response_code(404);
-        $response = [
-            'status' => false,
-            'msg' => 'User not found, please try signing up',
-        ];
-        echo json_encode($response);
+        echo json_encode(['status' => false, 'msg' => 'User not found, please try signing up']);
     }
 } else {
-    http_response_code(500); // Internal Server Error (Query or Connection Failed)
-    $response = [
-        'status' => false,
-        'msg' => 'Login failed, please try again later',
-    ];
-    echo json_encode($response);
+    http_response_code(500);
+    echo json_encode(['status' => false, 'msg' => 'Login failed, please try again later']);
 }
 
 $dbconnection->close();
-
 ?>
