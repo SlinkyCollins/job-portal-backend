@@ -1,15 +1,17 @@
 <?php
 session_name('JobNetSession');
+// Set session cookie params BEFORE session_start()
 session_set_cookie_params([
-    'lifetime' => 1800,
+    'lifetime' => 0,  // Session cookie (expires on browser close)
     'path' => '/',
-    'domain' => 'jobnet.vercel.app',
-    'secure' => true,
-    'httponly' => true,
-    'samesite' => 'Lax'
+    'domain' => '',  // Leave empty for current domain
+    'secure' => true,  // Only over HTTPS
+    'httponly' => true,  // JS can't access (security)
+    'samesite' => 'None'  // Allows cross-site requests
 ]);
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-    error_log('Session started, ID: ' . session_id());
-}
+
+ini_set('session.gc_maxlifetime', 14400);  // 4 hours in seconds
+ini_set('session.cookie_lifetime', 0);  // Browser close
+
+session_start();  // Now start the session
 ?>
