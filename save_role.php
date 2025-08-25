@@ -12,7 +12,12 @@ $data = json_decode(file_get_contents("php://input"));
 $token = $data->token;
 $role = $data->role;
 
-$factory = (new Factory)->withServiceAccount('jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
+if (file_exists(__DIR__ . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+    $dotenv->load();
+}
+
+$factory = (new Factory)->withServiceAccount(json_decode($_ENV['FIREBASE_CREDENTIALS'] ?? '{}', true));
 $auth = $factory->createAuth();
 
 try {
