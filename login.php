@@ -34,13 +34,14 @@ if ($execute) {
                 'email' => $user['email']
             ];
             $_SESSION['last_activity'] = time();
-            error_log('Login session ID: ' . session_id() . ', User: ' . json_encode($_SESSION['user']));
             http_response_code(200);
             echo json_encode([
                 'status' => true,
                 'msg' => 'Login successful',
                 'user' => $_SESSION['user']
             ]);
+            header('Location: https://job-portal-backend-rua3.onrender.com/auth-success.php');
+            exit;  // Stop here after redirect
         } else {
             http_response_code(401);
             echo json_encode(['status' => false, 'msg' => 'Incorrect password']);

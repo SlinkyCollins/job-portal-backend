@@ -13,4 +13,5 @@ ini_set('session.gc_maxlifetime', 7200);  // 2 hours in seconds
 
 session_name('JobNetSession');
 session_start();  // Now start the session
+error_log('Session ID: ' . session_id() . ', Cookie params: ' . print_r(session_get_cookie_params(), true));
 ?>
