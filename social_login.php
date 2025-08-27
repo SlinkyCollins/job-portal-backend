@@ -46,9 +46,13 @@ try {
         $user = $result->fetch_assoc();
         session_regenerate_id(true);
         $_SESSION['user'] = ['id' => $user['user_id'], 'role' => $user['role']];
-        echo json_encode(['status' => true, 'user' => $_SESSION['user']]);
+        $_SESSION['last_activity'] = time();
+        header('Location: https://job-portal-backend-rua3.onrender.com/auth-success');
+        // echo json_encode(['status' => true, 'user' => $_SESSION['user']]);
+        exit;  // Exit, no JSON
     } else {
         echo json_encode(['status' => false, 'newUser' => true, 'token' => $token]);
+        exit;
     }
 } catch (Exception $e) {
     http_response_code(401);
