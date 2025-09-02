@@ -9,7 +9,7 @@ use Kreait\Firebase\Auth as FirebaseAuth;
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
-$key = $_ENV['JWT_SECRET'];
+$key = getenv('JWT_SECRET');
 if (empty($key)) {
     error_log('Missing JWT_SECRET in .env');
     http_response_code(500);

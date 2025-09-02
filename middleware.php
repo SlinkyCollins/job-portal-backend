@@ -10,7 +10,7 @@ function validateJWT($required_role = null) {
 
     $headers = getallheaders();
     $auth = $headers['Authorization'] ?? '';
-    $key = $_ENV['JWT_SECRET'];
+    $key = getenv('JWT_SECRET');
 
     if (!$auth || !str_starts_with($auth, 'Bearer ')) {
         http_response_code(401);
