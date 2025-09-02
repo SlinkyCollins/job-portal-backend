@@ -38,14 +38,6 @@ try {
         $key = $_ENV('JWT_SECRET');
         $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 900];
         $jwt = JWT::encode($payload, $key, 'HS256');
-        setcookie('jwt', $jwt, [
-            'expires' => time() + 900,
-            'path' => '/',
-            'domain' => 'jobnet.vercel.app',
-            'secure' => true,
-            'httponly' => true,
-            'samesite' => 'Strict'
-        ]);
         echo json_encode(['status' => true, 'msg' => 'Role saved and logged in']);
     } else {
         http_response_code(500);

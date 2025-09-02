@@ -16,7 +16,6 @@ $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
 // Validate JWT
-$jwt = $_COOKIE['jwt'] ?? '';
 $key = $_ENV('JWT_SECRET');
 $user_id = null;
 $role = null;

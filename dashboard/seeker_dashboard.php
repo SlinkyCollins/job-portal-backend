@@ -9,7 +9,6 @@ if (file_exists(__DIR__ . '/../.env')) {
     $dotenv->load();
 }
 
-$jwt = $_COOKIE['jwt'] ?? '';
 $key = $_ENV('JWT_SECRET');
 
 try {

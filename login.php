@@ -2,6 +2,7 @@
 require_once 'headers.php';
 require 'connect.php';
 require 'vendor/autoload.php';
+
 use Firebase\JWT\JWT;
 
 if (file_exists(__DIR__ . '/.env')) {
@@ -36,17 +37,9 @@ if ($execute) {
             $key = $_ENV['JWT_SECRET'];
             $payload = ['user_id' => $user['user_id'], 'role' => $user['role'], 'email' => $user['email'], 'exp' => time() + 900]; // 15 mins
             $jwt = JWT::encode($payload, $key, 'HS256');
-            setcookie('jwt', $jwt, [
-                'expires' => time() + 900,
-                'path' => '/',
-                'domain' => 'jobnet.vercel.app',
-                'secure' => true,
-                'httponly' => true,
-                'samesite' => 'Strict'
-            ]);
             echo json_encode([
                 'status' => true,
-                'msg' => 'Login successful', 
+                'msg' => 'Login successful',
                 'user' => [
                     'user_id' => $user['user_id'],
                     'role' => $user['role'],

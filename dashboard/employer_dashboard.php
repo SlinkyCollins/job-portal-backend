@@ -8,7 +8,6 @@ use Firebase\JWT\JWT;
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
-$jwt = $_COOKIE['jwt'] ?? '';
 $key = $_ENV('JWT_SECRET');
 
 try {

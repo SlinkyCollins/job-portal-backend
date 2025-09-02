@@ -1,9 +1,9 @@
 <?php
-// header("Access-Control-Allow-Origin: http://localhost:4200");
-// header("Access-Control-Allow-Credentials: true");
-// header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-// header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token");
-// header("Vary: Origin");
+header("Access-Control-Allow-Origin: http://localhost:4200");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token");
+header("Vary: Origin");
 header("Content-Type: application/json");
 
 // Handle preflight OPTIONS request

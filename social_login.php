@@ -57,15 +57,6 @@ try {
                 'exp' => time() + 900 // 15 mins
             ];
             $jwt = JWT::encode($payload, $key, 'HS256');
-            setcookie('jwt', $jwt, [
-                'expires' => time() + 900,
-                'path' => '/',
-                'domain' => 'jobnet.vercel.app',
-                'secure' => true,
-                'httponly' => true,
-                'samesite' => 'Strict'
-            ]);
-            error_log('Login: Set jwt cookie for user_id=' . $user['user_id']);
             echo json_encode([
                 'status' => true,
                 'msg' => 'Login successful',
