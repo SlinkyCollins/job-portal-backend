@@ -1,37 +1,10 @@
 <?php
-require_once '../headers.php';
-require '../connect.php';
-require '../vendor/autoload.php';
-use Firebase\JWT\JWT;
+require_once '../middleware.php';
 
-if (file_exists(__DIR__ . '/../.env')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-    $dotenv->load();
-}
+// Validate JWT (no specific role required)
+$user = validateJWT();
+$user_id = $user['user_id'];
 
-$headers = getallheaders();
-$auth = $headers['Authorization'] ?? '';
-$key = $_ENV('JWT_SECRET');
-
-if (!$auth || !str_starts_with($auth, 'Bearer ')) {
-    http_response_code(401);
-    echo json_encode(['status' => false, 'msg' => 'No token provided']);
-    exit;
-}
-
-$jwt = str_replace('Bearer ', '', $auth);
-
-try {
-    $decoded = JWT::decode($jwt, new \Firebase\JWT\Key($key, 'HS256'));
-    $user_id = $decoded->user_id;
-    $role = $decoded->role;
-} catch (Exception $e) {
-    http_response_code(401);
-    echo json_encode(['status' => false, 'msg' => 'Token expired or invalid, please log in again']);
-    exit;
-}
-
-// Fetch user data from database
 $query = "SELECT user_id, firstname, lastname, email, role FROM users_table WHERE user_id = ?";
 $stmt = $dbconnection->prepare($query);
 $stmt->bind_param('i', $user_id);

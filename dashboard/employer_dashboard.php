@@ -1,37 +1,13 @@
 <?php
-require_once '../headers.php';
-require '../connect.php';
-require '../vendor/autoload.php';
+require_once '../middleware.php';
 
-use Firebase\JWT\JWT;
-
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
-
-$key = $_ENV('JWT_SECRET');
-
-try {
-    $decoded = JWT::decode($jwt, new \Firebase\JWT\Key($key, 'HS256'));
-    $user_id = $decoded->user_id;
-    $role = $decoded->role;
-
-    if ($role !== 'employer') {
-        http_response_code(403);
-        $response = [
-            'status' => false,
-            'msg' => 'Access denied. You do not have permission to view this page.'
-        ];
-        exit();
-    }
-} catch (Exception $e) {
-    http_response_code(401);
-    echo json_encode(['status' => false, 'msg' => 'Session expired. Log in again']);
-    exit;
-}
+// Validate JWT and require employer role
+$user = validateJWT('employer');
+$user_id = $user['user_id'];
 
 $response = [];
 
-$query = "SELECT user_id, firstname, lastname, email, role FROM users_table WHERE user_id= ?";
+$query = "SELECT user_id, firstname, lastname, email, role FROM users_table WHERE user_id = ?";
 $stmt = $dbconnection->prepare($query);
 $stmt->bind_param('i', $user_id);
 $execute = $stmt->execute();
@@ -39,10 +15,10 @@ $execute = $stmt->execute();
 if ($execute) {
     $result = $stmt->get_result();
     if ($result->num_rows > 0) {
-        $user = $result->fetch_assoc();
+        $user_data = $result->fetch_assoc();
         $response = [
             'status' => true,
-            'user' => $user
+            'user' => $user_data
         ];
     } else {
         http_response_code(404);
@@ -54,5 +30,5 @@ if ($execute) {
 }
 
 echo json_encode($response);
-
 $dbconnection->close();
+?>

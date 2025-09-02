@@ -1,41 +1,9 @@
 <?php
-require_once 'headers.php';
-require 'connect.php';
-require 'vendor/autoload.php';
-use Firebase\JWT\JWT;
+require_once 'middleware.php';
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
-
-// Validate JWT
-$headers = getallheaders();
-$auth = $headers['Authorization'] ?? '';
-$key = $_ENV('JWT_SECRET');
-
-if (!$auth || !str_starts_with($auth, 'Bearer ')) {
-    http_response_code(401);
-    echo json_encode(['status' => false, 'msg' => 'No token provided']);
-    exit;
-}
-
-$jwt = str_replace('Bearer ', '', $auth);
-
-try {
-    $decoded = JWT::decode($jwt, new \Firebase\JWT\Key($key, 'HS256'));
-    $user_id = $decoded->user_id;
-    $role = $decoded->role;
-} catch (Exception $e) {
-    http_response_code(401);
-    echo json_encode(['status' => false, 'msg' => 'Please log in to save jobs']);
-    exit;
-}
-
-// Check role
-if ($role !== 'job_seeker') {
-    http_response_code(403);
-    echo json_encode(['status' => false, 'msg' => 'Only job seekers can save jobs.']);
-    exit();
-}
+// Validate JWT and require job_seeker role
+$user = validateJWT('job_seeker');
+$user_id = $user['user_id'];
 
 // Get POST JSON data
 $data = json_decode(file_get_contents("php://input"));
@@ -44,9 +12,8 @@ $job_id = $data->jobId ?? null;
 if (!$job_id) {
     http_response_code(400);
     echo json_encode(['status' => false, 'msg' => 'Job ID is required.']);
-    exit();
+    exit;
 }
-
 
 // Prevent duplicate saved jobs
 $checkQuery = "SELECT id FROM saved_jobs_table WHERE job_id = ? AND user_id = ?";
@@ -57,14 +24,12 @@ $checkStmt->store_result();
 
 if ($checkStmt->num_rows > 0) {
     echo json_encode(['status' => false, 'msg' => 'You have already saved this job.', 'isSaved' => true]);
-    exit();
+    exit;
 }
 $checkStmt->close();
 
-
 // Insert into DB
-$query = "INSERT INTO saved_jobs_table (job_id, user_id) 
-          VALUES (?, ?)";
+$query = "INSERT INTO saved_jobs_table (job_id, user_id) VALUES (?, ?)";
 $stmt = $dbconnection->prepare($query);
 $stmt->bind_param('ii', $job_id, $user_id);
 
@@ -86,3 +51,4 @@ if ($stmt->execute()) {
 
 $stmt->close();
 $dbconnection->close();
+?>
