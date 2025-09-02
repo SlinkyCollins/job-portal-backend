@@ -35,7 +35,13 @@ if ($execute) {
 
         if ($verifypassword) {
             $key = $_ENV['JWT_SECRET'];
-            $payload = ['user_id' => $user['user_id'], 'role' => $user['role'], 'email' => $user['email'], 'exp' => time() + 900]; // 15 mins
+            $payload = [
+                'user_id' => $user['user_id'],
+                'role' => $user['role'],
+                'email' => $user['email'],
+                'exp' => time() + 900, // 15 mins
+                'iat' => time() // Issued at
+            ]; 
             $jwt = JWT::encode($payload, $key, 'HS256');
             echo json_encode([
                 'status' => true,

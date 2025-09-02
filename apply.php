@@ -8,7 +8,17 @@ $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
 // Validate JWT
+$headers = getallheaders();
+$auth = $headers['Authorization'] ?? '';
 $key = $_ENV('JWT_SECRET');
+
+if (!$auth || !str_starts_with($auth, 'Bearer ')) {
+    http_response_code(401);
+    echo json_encode(['status' => false, 'msg' => 'No token provided']);
+    exit;
+}
+
+$jwt = str_replace('Bearer ', '', $auth);
 
 try {
     $decoded = JWT::decode($jwt, new \Firebase\JWT\Key($key, 'HS256'));

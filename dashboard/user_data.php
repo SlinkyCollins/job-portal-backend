@@ -9,9 +9,19 @@ if (file_exists(__DIR__ . '/../.env')) {
     $dotenv->load();
 }
 
+$headers = getallheaders();
+$auth = $headers['Authorization'] ?? '';
+$key = $_ENV('JWT_SECRET');
+
+if (!$auth || !str_starts_with($auth, 'Bearer ')) {
+    http_response_code(401);
+    echo json_encode(['status' => false, 'msg' => 'No token provided']);
+    exit;
+}
+
+$jwt = str_replace('Bearer ', '', $auth);
 
 try {
-    $key = $_ENV('JWT_SECRET');
     $decoded = JWT::decode($jwt, new \Firebase\JWT\Key($key, 'HS256'));
     $user_id = $decoded->user_id;
     $role = $decoded->role;
