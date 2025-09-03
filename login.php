@@ -1,21 +1,23 @@
 <?php
 require_once 'headers.php';
 require 'connect.php';
-require 'vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 use Firebase\JWT\JWT;
 
-if (file_exists(__DIR__ . '/.env')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+
+if (file_exists(dirname(__DIR__) . '/.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
     $dotenv->load();
 }
 
-$key = getenv('JWT_SECRET');
-if (empty($key)) {
+if (empty($_ENV['JWT_SECRET'])) {
     error_log('Missing JWT_SECRET in .env');
     http_response_code(500);
     echo json_encode(['status' => false, 'msg' => 'Server configuration error']);
     exit;
 }
+
+$key = $_ENV['JWT_SECRET'];
 
 $data = json_decode(file_get_contents("php://input"));
 $useremail = $data->mail ?? '';

@@ -8,8 +8,19 @@ use Kreait\Firebase\Auth as FirebaseAuth;
 use Lcobucci\JWT\Token\Plain;
 use Firebase\JWT\JWT;
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+if (file_exists(dirname(__DIR__) . '/.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+    $dotenv->load();
+}
+
+if (empty($_ENV['JWT_SECRET'])) {
+    error_log('Missing JWT_SECRET in .env');
+    http_response_code(500);
+    echo json_encode(['status' => false, 'msg' => 'Server configuration error']);
+    exit;
+}
+
+$key = $_ENV['JWT_SECRET'];
 
 $data = json_decode(file_get_contents("php://input"));
 $token = $data->token;
@@ -35,7 +46,6 @@ try {
      if ($stmt->execute()) {
         $userId = $dbconnection->insert_id;
         // Issue JWT
-        $key = $_ENV('JWT_SECRET');
         $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 900];
         $jwt = JWT::encode($payload, $key, 'HS256');
         echo json_encode(['status' => true, 'msg' => 'Role saved and logged in']);

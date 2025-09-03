@@ -2,15 +2,27 @@
 require_once 'headers.php';
 require 'connect.php';
 require 'vendor/autoload.php';
+
 use Firebase\JWT\JWT;
 
-function validateJWT($required_role = null) {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-    $dotenv->load();
+function validateJWT($required_role = null)
+{
+    if (file_exists(dirname(__DIR__) . '/.env')) {
+        $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+        $dotenv->load();
+    }
+
+    if (empty($_ENV['JWT_SECRET'])) {
+        error_log('Missing JWT_SECRET in .env');
+        http_response_code(500);
+        echo json_encode(['status' => false, 'msg' => 'Server configuration error']);
+        exit;
+    }
+
+    $key = $_ENV['JWT_SECRET'];
 
     $headers = getallheaders();
     $auth = $headers['Authorization'] ?? '';
-    $key = getenv('JWT_SECRET');
 
     if (!$auth || !str_starts_with($auth, 'Bearer ')) {
         http_response_code(401);
@@ -38,4 +50,3 @@ function validateJWT($required_role = null) {
         exit;
     }
 }
-?>

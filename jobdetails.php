@@ -12,16 +12,25 @@ if (!$jobId) {
     exit();
 }
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+if (file_exists(dirname(__DIR__) . '/.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+    $dotenv->load();
+}
 
+if (empty($_ENV['JWT_SECRET'])) {
+    error_log('Missing JWT_SECRET in .env');
+    http_response_code(500);
+    echo json_encode(['status' => false, 'msg' => 'Server configuration error']);
+    exit;
+}
+
+$key = $_ENV['JWT_SECRET'];
 // Validate JWT
 $user_id = null;
 $role = null;
 
 $headers = getallheaders();
 $auth = $headers['Authorization'] ?? '';
-$key = $_ENV('JWT_SECRET');
 
 if (!$auth || !str_starts_with($auth, 'Bearer ')) {
     http_response_code(401);
