@@ -13,8 +13,8 @@ if (file_exists(dirname(__DIR__) . '/.env')) {
     $dotenv->load();
 }
 
-if (empty($_ENV['JWT_SECRET'])) {
-    error_log('Missing JWT_SECRET in .env');
+if (empty($_ENV['JWT_SECRET']) || empty($_ENV['FIREBASE_CREDENTIALS'])) {
+    error_log('Missing JWT_SECRET or FIREBASE_CREDENTIALS in .env');
     http_response_code(500);
     echo json_encode(['status' => false, 'msg' => 'Server configuration error']);
     exit;
@@ -25,6 +25,12 @@ $key = $_ENV['JWT_SECRET'];
 $data = json_decode(file_get_contents("php://input"));
 $token = $data->token;
 $role = $data->role;
+
+if (!$token || !$role || !in_array($role, ['job_seeker', 'employer'])) {
+    http_response_code(400);
+    echo json_encode(['status' => false, 'msg' => 'Token and valid role are required']);
+    exit;
+}
 
 $factory = (new Factory)->withServiceAccount(json_decode($_ENV['FIREBASE_CREDENTIALS'] ?? '{}', true));
 $auth = $factory->createAuth();
@@ -38,34 +44,51 @@ try {
     $nameParts = explode(' ', $name);
     $firstname = $nameParts[0] ?? '';
     $lastname = implode(' ', array_slice($nameParts, 1)) ?? '';
-
-    // Insert new user (no password for social)
-    $query = "INSERT INTO users_table (firstname, lastname, email, role, firebase_uid) VALUES (?, ?, ?, ?, ?)";
-    $stmt = $dbconnection->prepare($query);
-    $stmt->bind_param('sssss', $firstname, $lastname, $email, $role, $uid);
-    if ($stmt->execute()) {
-        $userId = $dbconnection->insert_id;
-        // Issue JWT
-        $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 900];
-        $jwt = JWT::encode($payload, $key, 'HS256');
-        echo json_encode([
-            'status' => true,
-            'msg' => 'Role saved and logged in',
-            'token' => $jwt, // Return JWT
-            'user' => [
-                'user_id' => $userId,
-                'role' => $role,
-                'email' => $email
-            ]
-        ]);
-    } else {
-        http_response_code(500);
-        echo json_encode(['status' => false, 'msg' => 'Error saving role']);
-    }
-    $stmt->close();
 } catch (Exception $e) {
+    error_log('Firebase token verification failed: ' . $e->getMessage());
     http_response_code(401);
-    echo json_encode(['status' => false, 'msg' => 'Invalid token: ' . $e->getMessage()]);
+    echo json_encode(['status' => false, 'msg' => 'Invalid Firebase token']);
+    exit;
 }
+
+// Check if user already exists
+$checkQuery = "SELECT user_id FROM users_table WHERE firebase_uid = ?";
+$checkStmt = $dbconnection->prepare($checkQuery);
+$checkStmt->bind_param('s', $uid);
+$checkStmt->execute();
+$checkResult = $checkStmt->get_result();
+if ($checkResult->num_rows > 0) {
+    http_response_code(409);
+    echo json_encode(['status' => false, 'msg' => 'User already exists']);
+    $checkStmt->close();
+    exit;
+}
+$checkStmt->close();
+
+// Insert new user (no password for social)
+$query = "INSERT INTO users_table (firstname, lastname, email, role, firebase_uid) VALUES (?, ?, ?, ?, ?)";
+$stmt = $dbconnection->prepare($query);
+$stmt->bind_param('sssss', $firstname, $lastname, $email, $role, $uid);
+if ($stmt->execute()) {
+    $userId = $dbconnection->insert_id;
+    // Issue JWT
+    $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 900];
+    $jwt = JWT::encode($payload, $key, 'HS256');
+    echo json_encode([
+        'status' => true,
+        'msg' => 'Role saved and logged in',
+        'token' => $jwt, // Return JWT
+        'user' => [
+            'user_id' => $userId,
+            'role' => $role,
+            'email' => $email
+        ]
+    ]);
+} else {
+    error_log('Database error: ' . $stmt->error);
+    http_response_code(500);
+    echo json_encode(['status' => false, 'msg' => 'Database error: Unable to save role']);
+}
+$stmt->close();
 
 $dbconnection->close();
