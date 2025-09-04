@@ -24,30 +24,24 @@ if (empty($_ENV['JWT_SECRET'])) {
     exit;
 }
 
+// Validate JWT (Optional for job details)
 $key = $_ENV['JWT_SECRET'];
-// Validate JWT
 $user_id = null;
 $role = null;
-
 $headers = getallheaders();
 $auth = $headers['Authorization'] ?? '';
 
-if (!$auth || !str_starts_with($auth, 'Bearer ')) {
-    http_response_code(401);
-    echo json_encode(['status' => false, 'msg' => 'No token provided']);
-    exit;
-}
-
-$jwt = str_replace('Bearer ', '', $auth);
-
-try {
-    $decoded = JWT::decode($jwt, new \Firebase\JWT\Key($key, 'HS256'));
-    $user_id = $decoded->user_id;
-    $role = $decoded->role;
-} catch (Exception $e) {
-    // Allow unauthenticated users to view job details, but set defaults
-    $user_id = null;
-    $role = null;
+if ($auth && str_starts_with($auth, 'Bearer ')) {
+    $jwt = str_replace('Bearer ', '', $auth);
+    try {
+        $decoded = JWT::decode($jwt, new \Firebase\JWT\Key($key, 'HS256'));
+        $user_id = $decoded->user_id;
+        $role = $decoded->role;
+    } catch (Exception $e) {
+        // Ignore invalid token; treat as unauthenticated
+        $user_id = null;
+        $role = null;
+    }
 }
 
 // Get job details
@@ -69,7 +63,7 @@ $job['qualifications'] = json_decode($job['qualifications'], true);
 $job['hasApplied'] = false;
 $job['isSaved'] = false;
 
-// If logged in and role is job_seeker, check if already applied
+// If logged in and role is job_seeker, check if already applied or saved
 if ($user_id && $role === 'job_seeker') {
     $checkQuery = "SELECT application_id FROM applications_table WHERE job_id = ? AND seeker_id = ?";
     $checkStmt = $dbconnection->prepare($checkQuery);
