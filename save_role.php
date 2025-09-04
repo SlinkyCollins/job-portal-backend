@@ -43,12 +43,21 @@ try {
     $query = "INSERT INTO users_table (firstname, lastname, email, role, firebase_uid) VALUES (?, ?, ?, ?, ?)";
     $stmt = $dbconnection->prepare($query);
     $stmt->bind_param('sssss', $firstname, $lastname, $email, $role, $uid);
-     if ($stmt->execute()) {
+    if ($stmt->execute()) {
         $userId = $dbconnection->insert_id;
         // Issue JWT
         $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 900];
         $jwt = JWT::encode($payload, $key, 'HS256');
-        echo json_encode(['status' => true, 'msg' => 'Role saved and logged in']);
+        echo json_encode([
+            'status' => true,
+            'msg' => 'Role saved and logged in',
+            'token' => $jwt, // Return JWT
+            'user' => [
+                'user_id' => $userId,
+                'role' => $role,
+                'email' => $email
+            ]
+        ]);
     } else {
         http_response_code(500);
         echo json_encode(['status' => false, 'msg' => 'Error saving role']);
@@ -60,4 +69,3 @@ try {
 }
 
 $dbconnection->close();
-?>
