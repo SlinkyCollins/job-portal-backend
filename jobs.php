@@ -43,13 +43,12 @@ if ($user_id) {
     $savedStmt->close();
 }
 
-$query = "SELECT job_id, job_title, job_description, employer_id, location, salary, job_type, qualifications, deadline, createdat FROM jobs_table ORDER BY createdat DESC";
+$query = "SELECT job_id, title, overview, description, requirements, responsibilities, employer_id, company_id, status, location, salary_amount, currency, salary_duration, experience_level, english_fluency, employment_type, category_id, created_at, updated_at FROM jobs_table ORDER BY created_at DESC";
 $result = $dbconnection->query($query);
 
 if ($result && $result->num_rows > 0) {
     $jobs = [];
     while ($row = $result->fetch_assoc()) {
-        $row['qualifications'] = json_decode($row['qualifications'], true);
         $row['isSaved'] = $user_id ? in_array($row['job_id'], $savedJobIds) : false;
         $jobs[] = $row;
     }
