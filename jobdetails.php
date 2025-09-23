@@ -45,8 +45,7 @@ if ($auth && str_starts_with($auth, 'Bearer ')) {
 }
 
 // Get job details
-$query = "SELECT job_id, job_title, job_description, employer_id, location, salary, job_type, qualifications, deadline, createdat 
-          FROM jobs_table WHERE job_id = ?";
+$query = "SELECT * FROM jobs_table WHERE job_id = ?";
 $stmt = $dbconnection->prepare($query);
 $stmt->bind_param('i', $jobId);
 $stmt->execute();
@@ -59,7 +58,6 @@ if (!$result || $result->num_rows === 0) {
 }
 
 $job = $result->fetch_assoc();
-$job['qualifications'] = json_decode($job['qualifications'], true);
 $job['hasApplied'] = false;
 $job['isSaved'] = false;
 
