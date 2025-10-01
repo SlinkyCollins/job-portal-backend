@@ -45,7 +45,7 @@ if ($auth && str_starts_with($auth, 'Bearer ')) {
 }
 
 // Get job details
-$query = "SELECT * FROM jobs_table WHERE job_id = ?";
+$query = "SELECT * FROM jobs_table JOIN companies ON companies.id = jobs_table.company_id WHERE jobs_table.job_id = ?";
 $stmt = $dbconnection->prepare($query);
 $stmt->bind_param('i', $jobId);
 $stmt->execute();

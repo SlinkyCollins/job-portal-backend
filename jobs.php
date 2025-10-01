@@ -8,7 +8,7 @@ use Firebase\JWT\JWT;
 $user_id = null;
 $savedJobIds = [];
 
-// Check for JWT token manually
+// ------------------- AUTH CHECK -------------------
 $headers = getallheaders();
 $auth = $headers['Authorization'] ?? '';
 
@@ -24,13 +24,12 @@ if ($auth && str_starts_with($auth, 'Bearer ')) {
             $decoded = JWT::decode($jwt, new \Firebase\JWT\Key($key, 'HS256'));
             $user_id = $decoded->user_id ?? null;
         } catch (Exception $e) {
-            // Invalid token, treat as guest
-            $user_id = null;
+            $user_id = null; // guest
         }
     }
 }
 
-// If logged in, get saved jobs
+// ------------------- SAVED JOBS -------------------
 if ($user_id) {
     $savedQuery = "SELECT job_id FROM saved_jobs_table WHERE user_id = ?";
     $savedStmt = $dbconnection->prepare($savedQuery);
@@ -43,9 +42,59 @@ if ($user_id) {
     $savedStmt->close();
 }
 
-$query = "SELECT job_id, title, location, salary_amount, currency, salary_duration, created_at FROM jobs_table ORDER BY created_at DESC";
-$result = $dbconnection->query($query);
+// ------------------- SEARCH FILTERS -------------------
+$location = $_GET['location'] ?? null;
+$category = $_GET['category'] ?? null; // category id
+$keyword = $_GET['keyword'] ?? null;
 
+// Base query (JOIN categories for category name)
+$sql = "SELECT j.job_id, j.title, j.location, j.salary_amount, j.currency, j.salary_duration, 
+               j.created_at, j.employment_type,
+               c.name AS category_name,
+               co.id AS company_id, co.name AS company_name, co.logo_url AS company_logo
+        FROM jobs_table j
+        LEFT JOIN categories c ON j.category_id = c.id
+        LEFT JOIN companies co ON j.company_id = co.id
+        WHERE 1=1";
+
+$params = [];
+$types = "";
+
+// Location filter
+if (!empty($location)) {
+    $sql .= " AND j.location LIKE ?";
+    $params[] = "%$location%";
+    $types .= "s";
+}
+
+// Category filter (match by category id)
+if (!empty($category) && ctype_digit($category)) {
+    $sql .= " AND j.category_id = ?";
+    $params[] = $category;
+    $types .= "i";
+}
+
+// Keyword filter (search across title/overview/description)
+if (!empty($keyword)) {
+    $sql .= " AND (j.title LIKE ? OR j.overview LIKE ? OR j.description LIKE ?)";
+    $params[] = "%$keyword%";
+    $params[] = "%$keyword%";
+    $params[] = "%$keyword%";
+    $types .= "sss";
+}
+
+$sql .= " ORDER BY j.created_at DESC";
+
+$stmt = $dbconnection->prepare($sql);
+
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
+
+$stmt->execute();
+$result = $stmt->get_result();
+
+// ------------------- RESPONSE -------------------
 if ($result && $result->num_rows > 0) {
     $jobs = [];
     while ($row = $result->fetch_assoc()) {
