@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token");
 header("Vary: Origin");
 header("Content-Type: application/json");
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline';");
 
 // Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
