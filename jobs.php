@@ -64,6 +64,7 @@ LEFT JOIN companies co ON j.company_id = co.id
 LEFT JOIN job_tags jt ON jt.job_id = j.job_id
 LEFT JOIN tags t ON t.id = jt.tag_id
 WHERE 1=1
+AND j.status = 'active'
 ";
 
 $params = [];
