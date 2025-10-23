@@ -29,10 +29,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             'public_id' => uniqid('cv_'),  // Unique ID for the file
         ]);
 
+        // Determine extension based on MIME type
+        $extension = '';
+        if ($file['type'] === 'application/pdf') {
+            $extension = '.pdf';
+        } elseif ($file['type'] === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            $extension = '.docx';
+        }
+
+        $cv_url = $uploadResult['secure_url'] . $extension;
+
         echo json_encode([
             'status' => true,
-            'url' => $uploadResult['secure_url'],
-            'public_id' => $uploadResult['public_id']  // Useful for deletion later
+            'url' => $cv_url,
+            'public_id' => $uploadResult['public_id']
         ]);
     } catch (Exception $e) {
         echo json_encode([
