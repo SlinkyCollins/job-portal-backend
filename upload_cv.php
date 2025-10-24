@@ -9,7 +9,7 @@ $user = validateJWT('job_seeker');
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     $file = $_FILES['file'];
     $allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];  // PDF, DOCX
-    $maxSize = 5 * 1024 * 1024;  // 5MB
+    $maxSize = 10 * 1024 * 1024;  // 10MB
 
     // Validate file
     if (!in_array($file['type'], $allowedTypes)) {
