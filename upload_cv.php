@@ -21,27 +21,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         exit;
     }
 
+    // Determine extension
+    $extension = '';
+    if ($file['type'] === 'application/pdf') {
+        $extension = '.pdf';
+    } elseif ($file['type'] === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        $extension = '.docx';
+    }
+
     try {
-        // Upload to Cloudinary
+        // Upload with extension in public_id
         $uploadResult = $cloudinary->uploadApi()->upload($file['tmp_name'], [
             'folder' => 'jobnet/cvs',
-            'resource_type' => 'raw',  // For non-image files
-            'public_id' => uniqid('cv_'),  // Unique ID for the file
+            'resource_type' => 'raw',  // Let Cloudinary detect (should work for PDFs/DOCX)
+            'public_id' => uniqid('cv_') . $extension,
+            'filename' => $file['name'] // Add this parameter to use the original file name
         ]);
 
-        // Determine extension based on MIME type
-        $extension = '';
-        if ($file['type'] === 'application/pdf') {
-            $extension = '.pdf';
-        } elseif ($file['type'] === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-            $extension = '.docx';
-        }
+        $cv_url = $uploadResult['secure_url'];
 
-        $cv_url = $uploadResult['secure_url'] . $extension;
+        // Assuming $cv_url is the URL you received from the upload result
+        $download_url = str_replace(
+            'raw/upload/',
+            'raw/upload/fl_attachment/',
+            $cv_url
+        );
 
+        // Now provide the $download_url to your user
         echo json_encode([
             'status' => true,
-            'url' => $cv_url,
+            'msg' => 'CV uploaded successfully',
+            'url' => $download_url,
             'public_id' => $uploadResult['public_id']
         ]);
     } catch (Exception $e) {
