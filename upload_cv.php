@@ -5,6 +5,7 @@ require_once 'middleware.php';
 require 'config/cloudinary_config.php';
 
 $user = validateJWT('job_seeker');
+$user_id = $user['user_id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     $file = $_FILES['file'];
@@ -46,6 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             'raw/upload/fl_attachment/',
             $cv_url
         );
+
+        // Just update
+        $update = $dbconnection->prepare("UPDATE job_seekers_table SET cv_url = ? WHERE user_id = ?");
+        $update->bind_param('si', $download_url, $user_id);
+        $update->execute();
+        $update->close();
 
         // Now provide the $download_url to your user
         echo json_encode([

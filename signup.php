@@ -43,6 +43,22 @@ if ($execute) {
         $execute = $prepare->execute();
 
         if ($execute) {
+            // Get the ID of the newly created user
+            $newUserId = $dbconnection->insert_id;
+
+            // Auto-create role-based record
+            if ($userRole === 'job_seeker') {
+                $insertJobSeeker = $dbconnection->prepare("INSERT INTO job_seekers_table (user_id) VALUES (?)");
+                $insertJobSeeker->bind_param('i', $newUserId);
+                $insertJobSeeker->execute();
+                $insertJobSeeker->close();
+            } elseif ($userRole === 'employer') {
+                $insertEmployer = $dbconnection->prepare("INSERT INTO employers_table (user_id) VALUES (?)");
+                $insertEmployer->bind_param('i', $newUserId);
+                $insertEmployer->execute();
+                $insertEmployer->close();
+            }
+
             http_response_code(201);
             $response = [
                 'status' => true,
