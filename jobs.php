@@ -55,7 +55,7 @@ $tags = $_GET['tags'] ?? []; // array
 $sql = "
 SELECT 
     j.job_id, j.title, j.location, j.salary_amount, j.currency, j.salary_duration,
-    j.created_at, j.employment_type, j.experience_level,
+    j.published_at, j.employment_type, j.experience_level,
     c.name AS category_name,
     co.id AS company_id, co.name AS company_name, co.logo_url AS company_logo
 FROM jobs_table j
@@ -134,7 +134,7 @@ if (!empty($tags) && is_array($tags)) {
 }
 
 // ------------------- GROUP & SORT -------------------
-$sql .= " GROUP BY j.job_id ORDER BY j.created_at DESC";
+$sql .= " GROUP BY j.job_id ORDER BY j.published_at DESC";
 
 $stmt = $dbconnection->prepare($sql);
 
