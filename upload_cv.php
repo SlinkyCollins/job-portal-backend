@@ -9,6 +9,7 @@ $user_id = $user['user_id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     $file = $_FILES['file'];
+    $cvfilename = $_POST['filename'] ?? '';  // Fix: Get from POST, not FILES
     $allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];  // PDF, DOCX
     $maxSize = 10 * 1024 * 1024;  // 10MB
 
@@ -18,7 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         exit;
     }
     if ($file['size'] > $maxSize) {
-        echo json_encode(['status' => false, 'message' => 'File too large. Max 5MB.']);
+        echo json_encode(['status' => false, 'message' => 'File too large. Max 10MB.']);  // Updated to match frontend
+        exit;
+    }
+
+    // Sanitize filename (basic security)
+    $cvfilename = htmlspecialchars(trim($cvfilename), ENT_QUOTES, 'UTF-8');
+    if (empty($cvfilename)) {
+        echo json_encode(['status' => false, 'message' => 'Filename is required.']);
         exit;
     }
 
@@ -36,29 +44,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             'folder' => 'jobnet/cvs',
             'resource_type' => 'raw',  // Let Cloudinary detect (should work for PDFs/DOCX)
             'public_id' => uniqid('cv_') . $extension,
-            'filename' => $file['name'] // Add this parameter to use the original file name
+            'filename' => $file['name']  // Use original file name for Cloudinary
         ]);
 
         $cv_url = $uploadResult['secure_url'];
 
-        // Assuming $cv_url is the URL you received from the upload result
+        $public_id = $uploadResult['public_id'];
+
+        // Create download URL
         $download_url = str_replace(
             'raw/upload/',
             'raw/upload/fl_attachment/',
             $cv_url
         );
 
-        // Just update
-        $update = $dbconnection->prepare("UPDATE job_seekers_table SET cv_url = ? WHERE user_id = ?");
-        $update->bind_param('si', $download_url, $user_id);
+        // Update database
+        $update = $dbconnection->prepare("UPDATE job_seekers_table SET cv_url = ?, cv_filename = ?, public_id = ? WHERE user_id = ?");
+        $update->bind_param('sssi', $download_url, $cvfilename, $public_id, $user_id);
         $update->execute();
         $update->close();
 
-        // Now provide the $download_url to your user
         echo json_encode([
             'status' => true,
             'msg' => 'CV uploaded successfully',
             'url' => $download_url,
+            'filename' => $cvfilename,
             'public_id' => $uploadResult['public_id']
         ]);
     } catch (Exception $e) {

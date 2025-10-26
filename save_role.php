@@ -4,7 +4,6 @@ require 'connect.php';
 require 'vendor/autoload.php';
 
 use Kreait\Firebase\Factory;
-use Kreait\Firebase\Auth as FirebaseAuth;
 use Lcobucci\JWT\Token\Plain;
 use Firebase\JWT\JWT;
 
@@ -70,7 +69,21 @@ $query = "INSERT INTO users_table (firstname, lastname, email, role, firebase_ui
 $stmt = $dbconnection->prepare($query);
 $stmt->bind_param('sssss', $firstname, $lastname, $email, $role, $uid);
 if ($stmt->execute()) {
+    // Get the ID of the newly created user
     $userId = $dbconnection->insert_id;
+
+    // Auto-create role-based record
+    if ($role === 'job_seeker') {
+        $insertJobSeeker = $dbconnection->prepare("INSERT INTO job_seekers_table (user_id) VALUES (?)");
+        $insertJobSeeker->bind_param('i', $userId);
+        $insertJobSeeker->execute();
+        $insertJobSeeker->close();
+    } elseif ($role === 'employer') {
+        $insertEmployer = $dbconnection->prepare("INSERT INTO employers_table (user_id) VALUES (?)");
+        $insertEmployer->bind_param('i', $userId);
+        $insertEmployer->execute();
+        $insertEmployer->close();
+    }
     // Issue JWT
     $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 900];
     $jwt = JWT::encode($payload, $key, 'HS256');
