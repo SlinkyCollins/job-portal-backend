@@ -14,8 +14,6 @@ $result = $stmt->get_result();
 
 if ($result && $result->num_rows > 0) {
     $profile = $result->fetch_assoc();
-    // Decode skills if stored as JSON
-    $profile['skills'] = json_decode($profile['skills'], true);
     echo json_encode(['status' => true, 'profile' => $profile]);
 } else {
     echo json_encode(['status' => false, 'msg' => 'Profile not found.']);
