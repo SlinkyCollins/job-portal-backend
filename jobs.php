@@ -46,10 +46,30 @@ if ($user_id) {
 $location = $_GET['location'] ?? null;
 $category = $_GET['category'] ?? null;
 $keyword = $_GET['keyword'] ?? null;
+$sort = $_GET['sort'] ?? 'datePosted';
 
 $employment_types = $_GET['employment_type'] ?? []; // array or comma string
 $experience_levels = $_GET['experience_level'] ?? []; // array or comma string
 $tags = $_GET['tags'] ?? []; // array
+
+// ------------------- DETERMINE ORDER BY CLAUSE -------------------
+// 👇 ADD THIS BLOCK
+$orderByClause = '';
+switch ($sort) {
+    case 'salaryLowToHigh':
+        $orderByClause = 'ORDER BY j.salary_amount ASC';
+        break;
+    case 'salaryHighToLow':
+        $orderByClause = 'ORDER BY j.salary_amount DESC';
+        break;
+    case 'relevance':
+        $orderByClause = 'ORDER BY j.title ASC';  // Alphabetical for now, can be enhanced later
+        break;
+    case 'datePosted':
+    default:
+        $orderByClause = 'ORDER BY j.published_at DESC';  // Newest first
+        break;
+}
 
 // ------------------- BASE QUERY -------------------
 $sql = "
@@ -134,7 +154,7 @@ if (!empty($tags) && is_array($tags)) {
 }
 
 // ------------------- GROUP & SORT -------------------
-$sql .= " GROUP BY j.job_id ORDER BY j.published_at DESC";
+$sql .= " GROUP BY j.job_id $orderByClause"; // 👈 USE DYNAMIC ORDER BY
 
 $stmt = $dbconnection->prepare($sql);
 
