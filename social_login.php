@@ -4,7 +4,6 @@ require 'connect.php';
 require 'vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Kreait\Firebase\Factory;
-use Kreait\Firebase\Auth as FirebaseAuth;
 
 if (file_exists(dirname(__DIR__) . '/.env')) {
     $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
@@ -80,6 +79,4 @@ try {
     echo json_encode(['status' => false, 'msg' => 'Invalid token']);
     exit;
 }
-
-$dbconnection->close();
 ?>
