@@ -85,7 +85,7 @@ if ($stmt->execute()) {
         $insertEmployer->close();
     }
     // Issue JWT
-    $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 900];
+    $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 10800, 'iat' => time()];
     $jwt = JWT::encode($payload, $key, 'HS256');
     echo json_encode([
         'status' => true,

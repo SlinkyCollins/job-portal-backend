@@ -54,7 +54,7 @@ try {
             'user_id' => $user['user_id'],
             'role' => $user['role'],
             'email' => $user['email'],
-            'exp' => time() + 900,
+            'exp' => time() + 10800,
             'iat' => time()
         ];
         $jwt = JWT::encode($payload, $key, 'HS256');

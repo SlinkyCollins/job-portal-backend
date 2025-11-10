@@ -58,7 +58,6 @@ $max_salary = $_GET['max_salary'] ?? null;
 $salary_duration = $_GET['salary_duration'] ?? null;
 
 // ------------------- DETERMINE ORDER BY CLAUSE -------------------
-// 👇 ADD THIS BLOCK
 $orderByClause = '';
 switch ($sort) {
     case 'salaryLowToHigh':
