@@ -52,6 +52,11 @@ $employment_types = $_GET['employment_type'] ?? []; // array or comma string
 $experience_levels = $_GET['experience_level'] ?? []; // array or comma string
 $tags = $_GET['tags'] ?? []; // array
 
+$currency = $_GET['currency'] ?? null; 
+$min_salary = $_GET['min_salary'] ?? null;
+$max_salary = $_GET['max_salary'] ?? null;
+$salary_duration = $_GET['salary_duration'] ?? null;
+
 // ------------------- DETERMINE ORDER BY CLAUSE -------------------
 // 👇 ADD THIS BLOCK
 $orderByClause = '';
@@ -151,6 +156,25 @@ if (!empty($tags) && is_array($tags)) {
         $params[] = $tag;
         $types .= "s";
     }
+}
+// Additional Salary Filters
+if (!empty($currency)) {
+    $sql .= " AND j.currency = ?";
+    $params[] = $currency;
+    $types .= "s";
+}
+
+if (!empty($min_salary) && !empty($max_salary)) {
+    $sql .= " AND j.salary_amount BETWEEN ? AND ?";
+    $params[] = $min_salary;
+    $params[] = $max_salary;
+    $types .= "ii";
+}
+
+if (!empty($salary_duration)) {
+    $sql .= " AND j.salary_duration = ?";
+    $params[] = $salary_duration;
+    $types .= "s";
 }
 
 // ------------------- GROUP & SORT -------------------
