@@ -5,6 +5,54 @@ require 'vendor/autoload.php';
 
 use Firebase\JWT\JWT;
 
+if (file_exists(dirname(__DIR__) . '/.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+    $dotenv->load();
+}
+
+$usedCurrencies = ['USD', 'NGN', 'GBP', 'EUR'];
+$cacheExpiryHours = 72;  // Define cache expiry (e.g., 72 hours)
+
+// Check if rates are cached and recent (only for used currencies)
+$rates = [];
+$placeholders = str_repeat('?,', count($usedCurrencies) - 1) . '?';
+$cacheQuery = "SELECT currency, rate FROM exchange_rates WHERE currency IN ($placeholders) AND last_updated > DATE_SUB(NOW(), INTERVAL $cacheExpiryHours HOUR)";
+$cacheStmt = $dbconnection->prepare($cacheQuery);
+$cacheStmt->execute($usedCurrencies);
+$cacheResult = $cacheStmt->get_result();
+if ($cacheResult->num_rows === count($usedCurrencies)) {
+    // Load from cache if all used currencies are cached
+    while ($row = $cacheResult->fetch_assoc()) {
+        $rates[$row['currency']] = $row['rate'];
+    }
+} else {
+    // Fetch from API and cache only used currencies
+    $apiKey = $_ENV['EXCHANGE_RATE_API_KEY'] ?? '';
+    $ratesUrl = "https://v6.exchangerate-api.com/v6/{$apiKey}/latest/USD";
+    $ratesResponse = file_get_contents($ratesUrl);
+    if ($ratesResponse) {
+        $ratesData = json_decode($ratesResponse, true);
+        if ($ratesData && isset($ratesData['conversion_rates'])) {
+            $allRates = $ratesData['conversion_rates'] ?? [];
+            // Filter to only used currencies
+            foreach ($usedCurrencies as $curr) {
+                if (isset($allRates[$curr])) {
+                    $rates[$curr] = $allRates[$curr];
+                    // Insert/update into DB
+                    $insertQuery = "INSERT INTO exchange_rates (currency, rate) VALUES (?, ?) ON DUPLICATE KEY UPDATE rate = VALUES(rate), last_updated = NOW()";
+                    $insertStmt = $dbconnection->prepare($insertQuery);
+                    $insertStmt->bind_param("sd", $curr, $rates[$curr]);
+                    $insertStmt->execute();
+                    $insertStmt->close();
+                }
+            }
+        }
+    }
+}
+$cacheStmt->close();
+
+// Now $rates has only USD, NGN, GBP, EUR
+
 $user_id = null;
 $savedJobIds = [];
 
@@ -14,10 +62,6 @@ $auth = $headers['Authorization'] ?? '';
 
 if ($auth && str_starts_with($auth, 'Bearer ')) {
     $jwt = str_replace('Bearer ', '', $auth);
-    if (file_exists(dirname(__DIR__) . '/.env')) {
-        $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
-        $dotenv->load();
-    }
     $key = $_ENV['JWT_SECRET'] ?? null;
     if ($key) {
         try {
@@ -52,7 +96,7 @@ $employment_types = $_GET['employment_type'] ?? []; // array or comma string
 $experience_levels = $_GET['experience_level'] ?? []; // array or comma string
 $tags = $_GET['tags'] ?? []; // array
 
-$currency = $_GET['currency'] ?? null; 
+$currency = $_GET['currency'] ?? null;
 $min_salary = $_GET['min_salary'] ?? null;
 $max_salary = $_GET['max_salary'] ?? null;
 $salary_duration = $_GET['salary_duration'] ?? null;
@@ -61,10 +105,19 @@ $salary_duration = $_GET['salary_duration'] ?? null;
 $orderByClause = '';
 switch ($sort) {
     case 'salaryLowToHigh':
-        $orderByClause = 'ORDER BY j.salary_amount ASC';
+        // Build a CASE statement for currency conversion
+        $caseStatement = '';
+        foreach ($rates as $curr => $rate) {
+            $caseStatement .= "WHEN j.currency = '$curr' THEN j.salary_amount / NULLIF($rate, 0) ";
+        }
+        $orderByClause = "ORDER BY CASE $caseStatement ELSE j.salary_amount END ASC";  // Fallback to original if no match
         break;
     case 'salaryHighToLow':
-        $orderByClause = 'ORDER BY j.salary_amount DESC';
+        $caseStatement = '';
+        foreach ($rates as $curr => $rate) {
+            $caseStatement .= "WHEN j.currency = '$curr' THEN j.salary_amount / NULLIF($rate, 0) ";
+        }
+        $orderByClause = "ORDER BY CASE $caseStatement ELSE j.salary_amount END DESC";
         break;
     case 'relevance':
         $orderByClause = 'ORDER BY j.title ASC';  // Alphabetical for now, can be enhanced later
@@ -156,6 +209,7 @@ if (!empty($tags) && is_array($tags)) {
         $types .= "s";
     }
 }
+
 // Additional Salary Filters
 if (!empty($currency)) {
     $sql .= " AND j.currency = ?";
@@ -167,7 +221,7 @@ if (!empty($min_salary) && !empty($max_salary)) {
     $sql .= " AND j.salary_amount BETWEEN ? AND ?";
     $params[] = $min_salary;
     $params[] = $max_salary;
-    $types .= "ii";
+    $types .= "ii";  // Change to "dd" if salaries are floats
 }
 
 if (!empty($salary_duration)) {
@@ -233,4 +287,3 @@ if ($result && $result->num_rows > 0) {
 
 echo json_encode($response);
 $dbconnection->close();
-?>
