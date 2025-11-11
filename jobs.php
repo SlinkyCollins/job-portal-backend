@@ -101,6 +101,11 @@ $min_salary = $_GET['min_salary'] ?? null;
 $max_salary = $_GET['max_salary'] ?? null;
 $salary_duration = $_GET['salary_duration'] ?? null;
 
+// ------------------- PAGINATION PARAMS -------------------
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$per_page = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 10;
+$offset = ($page - 1) * $per_page;
+
 // ------------------- DETERMINE ORDER BY CLAUSE -------------------
 $orderByClause = '';
 switch ($sort) {
@@ -129,12 +134,7 @@ switch ($sort) {
 }
 
 // ------------------- BASE QUERY -------------------
-$sql = "
-SELECT 
-    j.job_id, j.title, j.location, j.salary_amount, j.currency, j.salary_duration,
-    j.published_at, j.employment_type, j.experience_level,
-    c.name AS category_name,
-    co.id AS company_id, co.name AS company_name, co.logo_url AS company_logo
+$baseSql = "
 FROM jobs_table j
 LEFT JOIN categories c ON j.category_id = c.id
 LEFT JOIN companies co ON j.company_id = co.id
@@ -144,14 +144,25 @@ WHERE 1=1
 AND j.status = 'active'
 ";
 
+$selectSql = "
+SELECT 
+    j.job_id, j.title, j.location, j.salary_amount, j.currency, j.salary_duration,
+    j.published_at, j.employment_type, j.experience_level,
+    c.name AS category_name,
+    co.id AS company_id, co.name AS company_name, co.logo_url AS company_logo
+";
+
+$sql = $selectSql . $baseSql;
+
+$countSql = "SELECT COUNT(DISTINCT j.job_id) as total " . $baseSql;
+
 $params = [];
 $types = "";
-
-// ------------------- APPLY FILTERS -------------------
 
 // Location filter
 if (!empty($location)) {
     $sql .= " AND j.location LIKE ?";
+    $countSql .= " AND j.location LIKE ?";
     $params[] = "%$location%";
     $types .= "s";
 }
@@ -159,6 +170,7 @@ if (!empty($location)) {
 // Category filter
 if (!empty($category) && ctype_digit($category)) {
     $sql .= " AND j.category_id = ?";
+    $countSql .= " AND j.category_id = ?";
     $params[] = $category;
     $types .= "i";
 }
@@ -166,6 +178,7 @@ if (!empty($category) && ctype_digit($category)) {
 // Keyword filter
 if (!empty($keyword)) {
     $sql .= " AND (j.title LIKE ? OR j.overview LIKE ? OR j.description LIKE ?)";
+    $countSql .= " AND (j.title LIKE ? OR j.overview LIKE ? OR j.description LIKE ?)";
     $params[] = "%$keyword%";
     $params[] = "%$keyword%";
     $params[] = "%$keyword%";
@@ -179,6 +192,7 @@ if (!empty($_GET['employment_type'])) {
     if (count($arr) > 0) {
         $placeholders = implode(',', array_fill(0, count($arr), '?'));
         $sql .= " AND j.employment_type IN ($placeholders)";
+        $countSql .= " AND j.employment_type IN ($placeholders)";
         foreach ($arr as $et) {
             $params[] = $et;
             $types .= "s";
@@ -193,6 +207,7 @@ if (!empty($_GET['experience_level'])) {
     if (count($arr) > 0) {
         $placeholders = implode(',', array_fill(0, count($arr), '?'));
         $sql .= " AND j.experience_level IN ($placeholders)";
+        $countSql .= " AND j.experience_level IN ($placeholders)";
         foreach ($arr as $ex) {
             $params[] = $ex;
             $types .= "s";
@@ -204,6 +219,7 @@ if (!empty($_GET['experience_level'])) {
 if (!empty($tags) && is_array($tags)) {
     $placeholders = implode(',', array_fill(0, count($tags), '?'));
     $sql .= " AND t.name IN ($placeholders)";
+    $countSql .= " AND t.name IN ($placeholders)";
     foreach ($tags as $tag) {
         $params[] = $tag;
         $types .= "s";
@@ -213,12 +229,14 @@ if (!empty($tags) && is_array($tags)) {
 // Additional Salary Filters
 if (!empty($currency)) {
     $sql .= " AND j.currency = ?";
+    $countSql .= " AND j.currency = ?";
     $params[] = $currency;
     $types .= "s";
 }
 
 if (!empty($min_salary) && !empty($max_salary)) {
     $sql .= " AND j.salary_amount BETWEEN ? AND ?";
+    $countSql .= " AND j.salary_amount BETWEEN ? AND ?";
     $params[] = $min_salary;
     $params[] = $max_salary;
     $types .= "ii";  // Change to "dd" if salaries are floats
@@ -226,13 +244,29 @@ if (!empty($min_salary) && !empty($max_salary)) {
 
 if (!empty($salary_duration)) {
     $sql .= " AND j.salary_duration = ?";
+    $countSql .= " AND j.salary_duration = ?";
     $params[] = $salary_duration;
     $types .= "s";
 }
 
-// ------------------- GROUP & SORT -------------------
-$sql .= " GROUP BY j.job_id $orderByClause"; // 👈 USE DYNAMIC ORDER BY
+// ------------------- GROUP & SORT & PAGINATE -------------------
+$filterParams = $params; // Save params before adding pagination
+$sql .= " GROUP BY j.job_id $orderByClause LIMIT ? OFFSET ?";
+$params[] = $per_page;
+$params[] = $offset;
+$types .= "ii";
 
+// Prepare and execute count query
+$countStmt = $dbconnection->prepare($countSql);
+if (!empty($filterParams)) {
+    $countStmt->bind_param(substr($types, 0, -2), ...$filterParams);
+}
+$countStmt->execute();
+$countResult = $countStmt->get_result();
+$total_jobs = $countResult->fetch_assoc()['total'] ?? 0;
+$countStmt->close();
+
+// Prepare main query
 $stmt = $dbconnection->prepare($sql);
 
 if ($stmt === false) {
@@ -276,7 +310,11 @@ if ($result && $result->num_rows > 0) {
 
     $response = [
         'status' => true,
-        'jobs' => $jobs
+        'jobs' => $jobs,
+        'total' => $total_jobs,
+        'page' => $page,
+        'per_page' => $per_page,
+        'total_pages' => ceil($total_jobs / $per_page)
     ];
 } else {
     $response = [
