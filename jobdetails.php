@@ -69,16 +69,23 @@ if (!$result || $result->num_rows === 0) {
 $job = $result->fetch_assoc();
 $job['hasApplied'] = false;
 $job['isSaved'] = false;
+$job['isRetracted'] = false;
 
-// If logged in and role is job_seeker, check if already applied or saved
+// If logged in and role is job_seeker, check if already applied or saved or retracted
 if ($user_id && $role === 'job_seeker') {
-    $checkQuery = "SELECT application_id FROM applications_table WHERE job_id = ? AND seeker_id = ?";
+    $checkQuery = "SELECT status FROM applications_table WHERE job_id = ? AND seeker_id = ?";
     $checkStmt = $dbconnection->prepare($checkQuery);
     $checkStmt->bind_param('ii', $jobId, $user_id);
     $checkStmt->execute();
-    $checkStmt->store_result();
-    if ($checkStmt->num_rows > 0) {
-        $job['hasApplied'] = true;
+    $checkResult = $checkStmt->get_result();
+
+    if ($row = $checkResult->fetch_assoc()) {
+        $status = $row['status'];
+        if ($status === 'retracted') {
+            $job['isRetracted'] = true;
+        } elseif (in_array($status, ['pending', 'accepted', 'shortlisted'])) {
+            $job['hasApplied'] = true;
+        }
     }
     $checkStmt->close();
 
