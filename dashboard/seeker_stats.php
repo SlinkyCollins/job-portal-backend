@@ -25,7 +25,7 @@ if ($stmt = $dbconnection->prepare($shortlistedQuery)) {
 }
 
 // Get applied jobs count
-$appliedQuery = "SELECT COUNT(*) as count FROM applications_table WHERE seeker_id = ?";
+$appliedQuery = "SELECT COUNT(*) as count FROM applications_table WHERE seeker_id = ? AND status != 'retracted'";
 if ($stmt = $dbconnection->prepare($appliedQuery)) {
     $stmt->bind_param("i", $user_id);
     $stmt->execute();

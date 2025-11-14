@@ -28,7 +28,7 @@ LEFT JOIN
 LEFT JOIN 
     companies c ON c.id = j.company_id 
 WHERE 
-    a.seeker_id = ? 
+    a.seeker_id = ? AND a.status != 'retracted'
 ORDER BY 
     a.applied_at DESC 
 LIMIT 5";
