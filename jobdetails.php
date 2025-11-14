@@ -45,7 +45,16 @@ if ($auth && str_starts_with($auth, 'Bearer ')) {
 }
 
 // Get job details
-$query = "SELECT * FROM jobs_table JOIN companies ON companies.id = jobs_table.company_id WHERE jobs_table.job_id = ?";
+$query = "SELECT 
+    j.job_id, j.title, j.overview, j.description, j.requirements, j.responsibilities, 
+    j.employer_id, j.company_id, j.status, j.published_at, j.updated_at, 
+    j.location AS job_location, j.salary_amount, j.currency, j.salary_duration, 
+    j.experience_level, j.english_fluency, j.employment_type, j.category_id, 
+    j.nice_to_have, j.benefits,
+    c.id AS company_id_alias, c.name AS company_name, c.logo_url, c.location AS company_location, c.website, c.user_id AS company_user_id, c.created_at AS company_created_at
+FROM jobs_table j 
+JOIN companies c ON c.id = j.company_id 
+WHERE j.job_id = ?";
 $stmt = $dbconnection->prepare($query);
 $stmt->bind_param('i', $jobId);
 $stmt->execute();
@@ -89,3 +98,4 @@ echo json_encode(['status' => true, 'job' => $job]);
 
 $stmt->close();
 $dbconnection->close();
+?>
