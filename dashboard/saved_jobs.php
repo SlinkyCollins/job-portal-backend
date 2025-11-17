@@ -21,36 +21,42 @@ $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
 
 // Get query parameters
-$page = (int)($_GET['page'] ?? 1);
-$per_page = (int)($_GET['per_page'] ?? 5);
+$page = (int) ($_GET['page'] ?? 1);
+$per_page = (int) ($_GET['per_page'] ?? 5);
 $sort = $_GET['sort'] ?? 'new';
 
 // Validate parameters
-if ($page < 1) $page = 1;
-if ($per_page < 1 || $per_page > 50) $per_page = 10; // Limit per_page
+if ($page < 1)
+    $page = 1;
+if ($per_page < 1 || $per_page > 50)
+    $per_page = 10; // Limit per_page
 $offset = ($page - 1) * $per_page;
 
 // Build ORDER BY clause based on sort
-$order_by = 'sj.saved_at DESC'; // Default: new
+$orderByClause = '';
 switch ($sort) {
     case 'old':
-        $order_by = 'sj.saved_at ASC';
+        $orderByClause = 'sj.saved_at ASC';
         break;
     case 'salary-high':
-        $order_by = 'j.salary_amount DESC';
+        $orderByClause = 'j.salary_amount DESC';
         break;
     case 'salary-low':
-        $order_by = 'j.salary_amount ASC';
+        $orderByClause = 'j.salary_amount ASC';
         break;
     case 'company':
-        $order_by = 'c.name ASC';
+        $orderByClause = 'c.name ASC';
         break;
     case 'type':
-        $order_by = 'j.employment_type ASC';
+        $orderByClause = 'j.employment_type ASC';
         break;
     case 'category':
         // Assuming category is in jobs_table; adjust if needed
-        $order_by = 'j.category_id ASC';
+        $orderByClause = 'j.category_id ASC';
+        break;
+    case 'new':
+    default:
+        $orderByClause = 'sj.saved_at DESC';  // Default to newest saved
         break;
 }
 
@@ -77,7 +83,7 @@ LEFT JOIN job_tags jt ON jt.job_id = j.job_id
 LEFT JOIN tags t ON t.id = jt.tag_id
 WHERE sj.user_id = ?
 GROUP BY sj.id, j.job_id, c.id 
-ORDER BY $order_by
+ORDER BY $orderByClause
 LIMIT ? OFFSET ?";
 
 $stmt = $dbconnection->prepare($query);
