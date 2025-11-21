@@ -1,5 +1,5 @@
 <?php
-require 'vendor/autoload.php';
+require '../vendor/autoload.php';
 use Cloudinary\Cloudinary;  // Now this will work if autoload is fixed
 
 // Load .env only if it exists (optional for local dev)

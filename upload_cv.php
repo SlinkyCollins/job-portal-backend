@@ -48,7 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         ]);
 
         $cv_url = $uploadResult['secure_url'];
-
         $public_id = $uploadResult['public_id'];
 
         // Create download URL
@@ -59,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         );
 
         // Update database
-        $update = $dbconnection->prepare("UPDATE job_seekers_table SET cv_url = ?, cv_filename = ?, public_id = ? WHERE user_id = ?");
+        $update = $dbconnection->prepare("UPDATE job_seekers_table SET cv_url = ?, cv_filename = ?, cv_public_id = ? WHERE user_id = ?");
         $update->bind_param('sssi', $download_url, $cvfilename, $public_id, $user_id);
         $update->execute();
         $update->close();
