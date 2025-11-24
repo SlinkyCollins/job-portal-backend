@@ -1,0 +1,10 @@
+RewriteEngine On
+RewriteBase /
+
+# Specific rules for dynamic routes under /api
+RewriteRule ^api/jobs/([0-9]+)$ api/jobs/jobdetails.php?id=$1 [L,QSA]
+
+# General rule: Remove .php for static routes under /api
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/(.+)$ api/$1.php [L,QSA]
