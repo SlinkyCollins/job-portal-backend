@@ -1,5 +1,5 @@
 <?php
-require_once '../middleware.php';
+require_once __DIR__ . '/../../config/middleware.php';
 
 // Validate JWT and require job_seeker role
 $user = validateJWT('job_seeker');

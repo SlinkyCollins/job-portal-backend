@@ -1,7 +1,7 @@
 <?php
-require_once 'headers.php';
-require 'connect.php';
-require 'vendor/autoload.php';
+require_once __DIR__ . '/../../config/headers.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 use Firebase\JWT\JWT;
 
 $jobId = isset($_GET['id']) ? intval($_GET['id']) : null;

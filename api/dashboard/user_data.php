@@ -1,5 +1,5 @@
 <?php
-require_once '../middleware.php';
+require_once __DIR__ . '/../../config/middleware.php';
 
 // Validate JWT (no specific role required)
 $user = validateJWT();

@@ -1,6 +1,6 @@
 <?php
-require_once 'headers.php';
-require 'connect.php';
+require_once __DIR__ . '/../../config/headers.php';
+require_once __DIR__ . '/../../config/database.php';
 
 $data = json_decode(file_get_contents("php://input"));
 $firstname = $data->fname;

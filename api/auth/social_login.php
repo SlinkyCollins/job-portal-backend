@@ -1,12 +1,12 @@
 <?php
-require_once 'headers.php';
-require 'connect.php';
-require 'vendor/autoload.php';
+require_once __DIR__ . '/../../config/headers.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Kreait\Firebase\Factory;
 
-if (file_exists(dirname(__DIR__) . '/.env')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+if (file_exists(dirname(__DIR__) . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__) . '/..');
     $dotenv->load();
 }
 
@@ -21,6 +21,7 @@ $key = $_ENV['JWT_SECRET'];
 
 $data = json_decode(file_get_contents("php://input"), true);
 $token = $data['token'] ?? null;
+$photoURL = $data['photoURL'] ?? '';
 
 if (!$token) {
     http_response_code(400);
@@ -28,7 +29,22 @@ if (!$token) {
     exit;
 }
 
-$factory = (new Factory)->withServiceAccount(json_decode($_ENV['FIREBASE_CREDENTIALS'] ?? '{}', true));
+// Load Firebase credentials: Use JSON string from env (prod) or file path (local)
+if (!empty($_ENV['FIREBASE_CREDENTIALS'])) {
+    // Production: Decode JSON string from env
+    $firebaseCredentials = json_decode($_ENV['FIREBASE_CREDENTIALS'], true);
+} else {
+    // Local: Load from file path
+    $firebaseCredentialsPath = dirname(__DIR__, 2) . '/' . ($_ENV['FIREBASE_CREDENTIALS_PATH'] ?? 'config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
+    if (!file_exists($firebaseCredentialsPath)) {
+        http_response_code(500);
+        echo json_encode(['status' => false, 'msg' => 'Firebase config file missing']);
+        exit;
+    }
+    $firebaseCredentials = $firebaseCredentialsPath;  // Pass path directly
+}
+
+$factory = (new Factory)->withServiceAccount($firebaseCredentials);
 $auth = $factory->createAuth();
 
 try {
@@ -50,6 +66,15 @@ try {
 
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
+
+        // Update profile_pic_url if provided and not already set
+        if (!empty($photoURL)) {
+            $updatePhoto = $dbconnection->prepare("UPDATE job_seekers_table SET profile_pic_url = ? WHERE user_id = ? AND (profile_pic_url IS NULL OR profile_pic_url = '')");
+            $updatePhoto->bind_param('si', $photoURL, $user['user_id']);
+            $updatePhoto->execute();
+            $updatePhoto->close();
+        }
+
         $payload = [
             'user_id' => $user['user_id'],
             'role' => $user['role'],

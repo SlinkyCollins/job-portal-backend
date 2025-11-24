@@ -1,5 +1,5 @@
 <?php
-require_once 'middleware.php';
+require_once __DIR__ . '/../../config/middleware.php';
 
 // Validate JWT and require job_seeker role
 $user = validateJWT('job_seeker');
@@ -15,21 +15,21 @@ if (!$job_id) {
     exit;
 }
 
-// Prevent duplicate applications
-$checkQuery = "SELECT application_id FROM applications_table WHERE job_id = ? AND seeker_id = ?";
+// Prevent duplicate saved jobs
+$checkQuery = "SELECT id FROM saved_jobs_table WHERE job_id = ? AND user_id = ?";
 $checkStmt = $dbconnection->prepare($checkQuery);
 $checkStmt->bind_param('ii', $job_id, $user_id);
 $checkStmt->execute();
 $checkStmt->store_result();
 
 if ($checkStmt->num_rows > 0) {
-    echo json_encode(['status' => false, 'msg' => 'You have already applied for this job.', 'hasApplied' => true]);
+    echo json_encode(['status' => false, 'msg' => 'You have already saved this job.', 'isSaved' => true]);
     exit;
 }
 $checkStmt->close();
 
 // Insert into DB
-$query = "INSERT INTO applications_table (job_id, seeker_id, status) VALUES (?, ?, 'pending')";
+$query = "INSERT INTO saved_jobs_table (job_id, user_id) VALUES (?, ?)";
 $stmt = $dbconnection->prepare($query);
 $stmt->bind_param('ii', $job_id, $user_id);
 
@@ -37,15 +37,15 @@ if ($stmt->execute()) {
     http_response_code(200);
     echo json_encode([
         'status' => true,
-        'msg' => 'Application submitted successfully!',
-        'hasApplied' => true
+        'msg' => 'Added to Wishlist!',
+        'isSaved' => true
     ]);
 } else {
     http_response_code(500);
     echo json_encode([
         'status' => false,
-        'msg' => 'Failed to submit application. Please try again later.',
-        'hasApplied' => false
+        'msg' => 'Failed to save job. Please try again later.',
+        'isSaved' => false
     ]);
 }
 

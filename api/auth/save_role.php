@@ -1,19 +1,19 @@
 <?php
-require_once 'headers.php';
-require 'connect.php';
-require 'vendor/autoload.php';
+require_once __DIR__ . '/../../config/headers.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Kreait\Firebase\Factory;
 use Lcobucci\JWT\Token\Plain;
 use Firebase\JWT\JWT;
 
-if (file_exists(dirname(__DIR__) . '/.env')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+if (file_exists(dirname(__DIR__) . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__) . '/..');
     $dotenv->load();
 }
 
-if (empty($_ENV['JWT_SECRET']) || empty($_ENV['FIREBASE_CREDENTIALS'])) {
-    error_log('Missing JWT_SECRET or FIREBASE_CREDENTIALS in .env');
+if (empty($_ENV['JWT_SECRET'])) {
+    error_log('Missing JWT_SECRET in .env');
     http_response_code(500);
     echo json_encode(['status' => false, 'msg' => 'Server configuration error']);
     exit;
@@ -24,6 +24,7 @@ $key = $_ENV['JWT_SECRET'];
 $data = json_decode(file_get_contents("php://input"));
 $token = $data->token;
 $role = $data->role;
+$photoURL = $data->photoURL ?? '';
 
 if (!$token || !$role || !in_array($role, ['job_seeker', 'employer'])) {
     http_response_code(400);
@@ -31,7 +32,22 @@ if (!$token || !$role || !in_array($role, ['job_seeker', 'employer'])) {
     exit;
 }
 
-$factory = (new Factory)->withServiceAccount(json_decode($_ENV['FIREBASE_CREDENTIALS'] ?? '{}', true));
+// Load Firebase credentials: Use JSON string from env (prod) or file path (local)
+if (!empty($_ENV['FIREBASE_CREDENTIALS'])) {
+    // Production: Decode JSON string from env
+    $firebaseCredentials = json_decode($_ENV['FIREBASE_CREDENTIALS'], true);
+} else {
+    // Local: Load from file path
+    $firebaseCredentialsPath = dirname(__DIR__, 2) . '/' . ($_ENV['FIREBASE_CREDENTIALS_PATH'] ?? 'config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
+    if (!file_exists($firebaseCredentialsPath)) {
+        http_response_code(500);
+        echo json_encode(['status' => false, 'msg' => 'Firebase config file missing']);
+        exit;
+    }
+    $firebaseCredentials = $firebaseCredentialsPath;  // Pass path directly
+}
+
+$factory = (new Factory)->withServiceAccount($firebaseCredentials);
 $auth = $factory->createAuth();
 
 try {
@@ -77,13 +93,32 @@ if ($stmt->execute()) {
         $insertJobSeeker = $dbconnection->prepare("INSERT INTO job_seekers_table (user_id) VALUES (?)");
         $insertJobSeeker->bind_param('i', $userId);
         $insertJobSeeker->execute();
+        
+        // Save photoURL if provided
+        if (!empty($photoURL)) {
+            $updatePhoto = $dbconnection->prepare("UPDATE job_seekers_table SET profile_pic_url = ? WHERE user_id = ?");
+            $updatePhoto->bind_param('si', $photoURL, $userId);
+            $updatePhoto->execute();
+            $updatePhoto->close();
+        }
+        
         $insertJobSeeker->close();
     } elseif ($role === 'employer') {
         $insertEmployer = $dbconnection->prepare("INSERT INTO employers_table (user_id) VALUES (?)");
         $insertEmployer->bind_param('i', $userId);
         $insertEmployer->execute();
+
+        // Save photoURL if provided
+        if (!empty($photoURL)) {
+            $updatePhoto = $dbconnection->prepare("UPDATE employers_table SET profile_pic_url = ? WHERE user_id = ?");
+            $updatePhoto->bind_param('si', $photoURL, $userId);
+            $updatePhoto->execute();
+            $updatePhoto->close();
+        }
+        
         $insertEmployer->close();
     }
+    
     // Issue JWT
     $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 10800, 'iat' => time()];
     $jwt = JWT::encode($payload, $key, 'HS256');
@@ -105,3 +140,4 @@ if ($stmt->execute()) {
 $stmt->close();
 
 $dbconnection->close();
+?>

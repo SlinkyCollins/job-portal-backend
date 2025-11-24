@@ -1,12 +1,12 @@
 <?php
-require_once 'headers.php';
-require 'connect.php';
-require 'vendor/autoload.php';
+require_once __DIR__ . '/../../config/headers.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Firebase\JWT\JWT;
 
-if (file_exists(dirname(__DIR__) . '/.env')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+if (file_exists(dirname(__DIR__) . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__) . '/..');
     $dotenv->load();
 }
 

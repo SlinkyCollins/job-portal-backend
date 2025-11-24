@@ -1,7 +1,7 @@
 <?php
-require_once 'headers.php';
-require 'connect.php';
-require 'vendor/autoload.php';
+require_once __DIR__ . '/../../config/headers.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Firebase\JWT\JWT;
 
@@ -14,8 +14,8 @@ $auth = $headers['Authorization'] ?? '';
 
 if ($auth && str_starts_with($auth, 'Bearer ')) {
     $jwt = str_replace('Bearer ', '', $auth);
-    if (file_exists(dirname(__DIR__) . '/.env')) {
-        $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+    if (file_exists(dirname(__DIR__) . '/../.env')) {
+        $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__) . '/..');
         $dotenv->load();
     }
     $key = $_ENV['JWT_SECRET'] ?? null;

@@ -1,8 +1,8 @@
 <?php
-require_once 'headers.php';
-require 'connect.php';
-require_once 'middleware.php';
-require 'config/cloudinary_config.php';
+require_once __DIR__ . '/../../config/headers.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/middleware.php';
+require_once __DIR__ . '/../../config/cloudinary.php';
 
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];

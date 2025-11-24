@@ -1,10 +1,10 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php'; // Composer's autoloader
+require __DIR__ . '/../vendor/autoload.php';  // Composer's autoloader 
 
 // Load .env only if it exists (optional for local dev)
-if (file_exists(__DIR__ . '/.env')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+if (file_exists(__DIR__ . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
     $dotenv->load();
 }
 
@@ -18,7 +18,7 @@ if ($env === 'production') {
     $user = $_ENV['DB_USER'];
     $pass = $_ENV['DB_PASS'];
     $db   = $_ENV['DB_NAME'];
-    $caCert = __DIR__ . '/certs/ca.pem'; // SSL cert for Aiven
+    $caCert = __DIR__ . '/../certs/ca.pem'; // SSL cert for Aiven
     $useSSL = true;
 } else {
     // Local (XAMPP) settings

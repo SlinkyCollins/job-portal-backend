@@ -1,7 +1,7 @@
 <?php
-require_once 'headers.php';
-require 'connect.php';
-require_once 'middleware.php';
+require_once __DIR__ . '/../../config/headers.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/middleware.php';
 
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
