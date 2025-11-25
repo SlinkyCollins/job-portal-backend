@@ -1,10 +1,17 @@
 RewriteEngine On
-RewriteBase /
 
 # Specific rules for dynamic routes under /api
-RewriteRule ^api/jobs/([0-9]+)$ api/jobs/jobdetails.php?id=$1 [L,QSA]
+RewriteCond %{HTTP_HOST} localhost
+RewriteRule ^api/jobs/([0-9]+)$ /JobPortal/api/jobs/jobdetails.php?id=$1 [L,QSA]
+RewriteCond %{HTTP_HOST} !localhost
+RewriteRule ^api/jobs/([0-9]+)$ /api/jobs/jobdetails.php?id=$1 [L,QSA]
 
 # General rule: Remove .php for static routes under /api
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^api/(.+)$ api/$1.php [L,QSA]
+RewriteCond %{HTTP_HOST} localhost
+RewriteRule ^api/(.+)$ /JobPortal/api/$1.php [L,QSA]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{HTTP_HOST} !localhost
+RewriteRule ^api/(.+)$ /api/$1.php [L,QSA]
