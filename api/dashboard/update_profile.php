@@ -12,6 +12,7 @@ $phone = $profileData->phone ?? null;
 $bio = $profileData->bio ?? null;
 $address = $profileData->address ?? null;
 $country = $profileData->country ?? null;
+$linked_providers = $profileData->linked_providers ?? null;
 
 // Validation
 
@@ -78,8 +79,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $updateUser->close();
 
     // Update job_seekers_table
-    $updateSeeker = $dbconnection->prepare("UPDATE job_seekers_table SET fullname = ?, phone = ?, bio = ?, address = ?, country = ? WHERE user_id = ?");
-    $updateSeeker->bind_param('sssssi', $fullname, $phone, $bio, $address, $country, $user_id);
+    $updateSeeker = $dbconnection->prepare("UPDATE job_seekers_table SET fullname = ?, phone = ?, bio = ?, address = ?, country = ?, linked_providers = ? WHERE user_id = ?");
+    $updateSeeker->bind_param('ssssssi', $fullname, $phone, $bio, $address, $country, $linked_providers, $user_id);
     $seekerSuccess = $updateSeeker->execute();
     $updateSeeker->close();
 
