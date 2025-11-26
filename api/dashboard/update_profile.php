@@ -14,6 +14,32 @@ $address = $profileData->address ?? null;
 $country = $profileData->country ?? null;
 $linked_providers = $profileData->linked_providers ?? null;
 
+// Check if this is a partial update for linked_providers only (when linking accounts)
+$isPartialUpdate = $linked_providers !== null && empty($fullname) && empty($phone) && empty($address) && empty($country);
+
+if ($isPartialUpdate) {
+    // Validate linked_providers only
+    json_decode($linked_providers);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        http_response_code(400);
+        echo json_encode(['status' => false, 'msg' => 'Linked providers must be valid JSON.']);
+        exit;
+    }
+
+    // Update users_table for linked_providers
+    $updateUser = $dbconnection->prepare("UPDATE users_table SET linked_providers = ? WHERE user_id = ?");
+    $updateUser->bind_param('si', $linked_providers, $user_id);
+    if ($updateUser->execute()) {
+        echo json_encode(['status' => true, 'msg' => 'Linked providers updated successfully.']);
+    } else {
+        http_response_code(500);
+        echo json_encode(['status' => false, 'msg' => 'Failed to update linked providers.']);
+    }
+    $updateUser->close();
+    $dbconnection->close();
+    exit;
+}
+
 // List of valid country codes
 $validCountries = [
     'AF',
@@ -307,9 +333,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Start transaction
     $dbconnection->begin_transaction();
 
-    // Update users_table: Always update firstname/lastname, conditionally update linked_providers
-    $updateUser = $dbconnection->prepare("UPDATE users_table SET firstname = ?, lastname = ?, linked_providers = COALESCE(?, linked_providers) WHERE user_id = ?");
-    $updateUser->bind_param('sssi', $firstname, $lastname, $linked_providers, $user_id);
+    // Update users_table: Update firstname/lastname 
+    $updateUser = $dbconnection->prepare("UPDATE users_table SET firstname = ?, lastname = ? WHERE user_id = ?");
+    $updateUser->bind_param('ssi', $firstname, $lastname, $user_id);
     $userSuccess = $updateUser->execute();
     $updateUser->close();
 
