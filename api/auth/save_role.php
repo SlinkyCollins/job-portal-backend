@@ -56,6 +56,7 @@ try {
     $uid = $verifiedIdToken->claims()->get('sub');
     $email = $verifiedIdToken->claims()->get('email');
     $name = $verifiedIdToken->claims()->get('name') ?? '';
+    $provider = $verifiedIdToken->claims()->get('firebase.sign_in_provider') ?? 'unknown';
     $nameParts = explode(' ', $name);
     $firstname = $nameParts[0] ?? '';
     $lastname = implode(' ', array_slice($nameParts, 1)) ?? '';
@@ -93,7 +94,7 @@ if ($stmt->execute()) {
         $insertJobSeeker = $dbconnection->prepare("INSERT INTO job_seekers_table (user_id) VALUES (?)");
         $insertJobSeeker->bind_param('i', $userId);
         $insertJobSeeker->execute();
-        
+
         // Save photoURL if provided
         if (!empty($photoURL)) {
             $updatePhoto = $dbconnection->prepare("UPDATE job_seekers_table SET profile_pic_url = ? WHERE user_id = ?");
@@ -101,7 +102,14 @@ if ($stmt->execute()) {
             $updatePhoto->execute();
             $updatePhoto->close();
         }
-        
+
+        // After inserting job_seeker, update users_table
+        $linkedProvidersJson = json_encode([$provider]);
+        $updateUser = $dbconnection->prepare("UPDATE users_table SET linked_providers = ? WHERE user_id = ?");
+        $updateUser->bind_param('si', $linkedProvidersJson, $userId);
+        $updateUser->execute();
+        $updateUser->close();
+
         $insertJobSeeker->close();
     } elseif ($role === 'employer') {
         $insertEmployer = $dbconnection->prepare("INSERT INTO employers_table (user_id) VALUES (?)");
@@ -115,10 +123,17 @@ if ($stmt->execute()) {
             $updatePhoto->execute();
             $updatePhoto->close();
         }
-        
+
+        // After inserting employer, update users_table
+        $linkedProvidersJson = json_encode([$provider]);
+        $updateUser = $dbconnection->prepare("UPDATE users_table SET linked_providers = ? WHERE user_id = ?");
+        $updateUser->bind_param('si', $linkedProvidersJson, $userId);
+        $updateUser->execute();
+        $updateUser->close();
+
         $insertEmployer->close();
     }
-    
+
     // Issue JWT
     $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 10800, 'iat' => time()];
     $jwt = JWT::encode($payload, $key, 'HS256');

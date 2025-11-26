@@ -53,6 +53,7 @@ try {
     $uid = $verifiedIdToken->claims()->get('sub');
     $email = $verifiedIdToken->claims()->get('email');
     $name = $verifiedIdToken->claims()->get('name') ?? '';
+    $provider = $verifiedIdToken->claims()->get('firebase.sign_in_provider') ?? 'unknown';
 
     $nameParts = explode(' ', $name);
     $firstname = $nameParts[0] ?? '';
@@ -74,6 +75,13 @@ try {
             $updatePhoto->execute();
             $updatePhoto->close();
         }
+
+        // Update linked_providers if empty (in users_table)
+        $linkedProvidersJson = json_encode([$provider]);
+        $updateProviders = $dbconnection->prepare("UPDATE users_table SET linked_providers = ? WHERE user_id = ? AND (linked_providers IS NULL OR linked_providers = '' OR linked_providers = '[]')");
+        $updateProviders->bind_param('si', $linkedProvidersJson, $user['user_id']);
+        $updateProviders->execute();
+        $updateProviders->close();
 
         $payload = [
             'user_id' => $user['user_id'],

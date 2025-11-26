@@ -16,6 +16,7 @@ $query =
     js.profile_pic_url,
     js.cv_url,
     js.cv_filename,
+    u.linked_providers,
     u.firstname,
     u.lastname 
 FROM job_seekers_table js 
