@@ -56,7 +56,8 @@ try {
     $uid = $verifiedIdToken->claims()->get('sub');
     $email = $verifiedIdToken->claims()->get('email');
     $name = $verifiedIdToken->claims()->get('name') ?? '';
-    $provider = $verifiedIdToken->claims()->get('firebase.sign_in_provider') ?? 'unknown';
+    $firebaseClaims = $verifiedIdToken->claims()->get('firebase', []);
+    $provider = $firebaseClaims['sign_in_provider'] ?? 'unknown';
     $nameParts = explode(' ', $name);
     $firstname = $nameParts[0] ?? '';
     $lastname = implode(' ', array_slice($nameParts, 1)) ?? '';
