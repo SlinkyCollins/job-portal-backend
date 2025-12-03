@@ -16,6 +16,10 @@ $query =
     js.profile_pic_url,
     js.cv_url,
     js.cv_filename,
+    js.overview,
+    js.education,
+    js.resume_skills,
+    js.experience,
     u.linked_providers,
     u.firstname,
     u.lastname 
