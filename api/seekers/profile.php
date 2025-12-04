@@ -22,7 +22,8 @@ $query =
     js.experience,
     u.linked_providers,
     u.firstname,
-    u.lastname 
+    u.lastname,
+    u.email 
 FROM job_seekers_table js 
 JOIN users_table u ON js.user_id = u.user_id 
 WHERE js.user_id = ?";
