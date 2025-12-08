@@ -20,6 +20,46 @@ if (!$key) {
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
 
+// ------------------- EXCHANGE RATES (Copied from all_jobs.php) -------------------
+$usedCurrencies = ['USD', 'NGN', 'GBP', 'EUR'];
+$cacheExpiryHours = 72;
+
+$rates = [];
+$placeholders = str_repeat('?,', count($usedCurrencies) - 1) . '?';
+$cacheQuery = "SELECT currency, rate FROM exchange_rates WHERE currency IN ($placeholders) AND last_updated > DATE_SUB(NOW(), INTERVAL $cacheExpiryHours HOUR)";
+$cacheStmt = $dbconnection->prepare($cacheQuery);
+$cacheStmt->execute($usedCurrencies);
+$cacheResult = $cacheStmt->get_result();
+
+if ($cacheResult->num_rows === count($usedCurrencies)) {
+    while ($row = $cacheResult->fetch_assoc()) {
+        $rates[$row['currency']] = $row['rate'];
+    }
+} else {
+    $apiKey = $_ENV['EXCHANGE_RATE_API_KEY'] ?? '';
+    $ratesUrl = "https://v6.exchangerate-api.com/v6/{$apiKey}/latest/USD";
+    // Suppress errors to avoid breaking the API if external call fails
+    $ratesResponse = @file_get_contents($ratesUrl);
+    if ($ratesResponse) {
+        $ratesData = json_decode($ratesResponse, true);
+        if ($ratesData && isset($ratesData['conversion_rates'])) {
+            $allRates = $ratesData['conversion_rates'] ?? [];
+            foreach ($usedCurrencies as $curr) {
+                if (isset($allRates[$curr])) {
+                    $rates[$curr] = $allRates[$curr];
+                    $insertQuery = "INSERT INTO exchange_rates (currency, rate) VALUES (?, ?) ON DUPLICATE KEY UPDATE rate = VALUES(rate), last_updated = NOW()";
+                    $insertStmt = $dbconnection->prepare($insertQuery);
+                    $insertStmt->bind_param("sd", $curr, $rates[$curr]);
+                    $insertStmt->execute();
+                    $insertStmt->close();
+                }
+            }
+        }
+    }
+}
+$cacheStmt->close();
+// ---------------------------------------------------------------------------------
+
 // Get query parameters
 $page = (int) ($_GET['page'] ?? 1);
 $per_page = (int) ($_GET['per_page'] ?? 5);
@@ -39,20 +79,30 @@ switch ($sort) {
         $orderByClause = 'sj.saved_at ASC';
         break;
     case 'salary-high':
-        $orderByClause = 'j.salary_amount DESC';
+        $caseStatement = '';
+        foreach ($rates as $curr => $rate) {
+            $caseStatement .= "WHEN j.currency = '$curr' THEN j.salary_amount / NULLIF($rate, 0) ";
+        }
+        // Fallback to raw amount if currency not found or rate is 0
+        $orderByClause = "CASE $caseStatement ELSE j.salary_amount END DESC";
         break;
     case 'salary-low':
-        $orderByClause = 'j.salary_amount ASC';
+        $caseStatement = '';
+        foreach ($rates as $curr => $rate) {
+            $caseStatement .= "WHEN j.currency = '$curr' THEN j.salary_amount / NULLIF($rate, 0) ";
+        }
+        $orderByClause = "CASE $caseStatement ELSE j.salary_amount END ASC";
         break;
     case 'company':
         $orderByClause = 'c.name ASC';
         break;
     case 'type':
-        $orderByClause = 'j.employment_type ASC';
+        // Ensure alphabetical order (Contract < Full Time < Part Time)
+        // Using TRIM to avoid whitespace issues
+        $orderByClause = 'TRIM(j.employment_type) ASC';
         break;
     case 'category':
-        // Assuming category is in jobs_table; adjust if needed
-        $orderByClause = 'j.category_id ASC';
+        $orderByClause = 'cat.name ASC';
         break;
     case 'new':
     default:
@@ -73,16 +123,17 @@ $count_stmt->close();
 // Query to get saved jobs with pagination and sorting
 $query = "SELECT 
     sj.id AS saved_id, sj.saved_at,
-    j.job_id, j.title, j.overview, j.description, j.location, j.salary_amount, j.currency, j.salary_duration, j.experience_level, j.employment_type,
+    j.job_id, j.title, j.overview, j.description, j.location, j.salary_amount, j.currency, j.salary_duration, j.experience_level, j.category_id AS category_id, cat.name AS category_name, j.employment_type,
     c.name AS company_name, c.logo_url AS company_logo,
     GROUP_CONCAT(t.name SEPARATOR ',') AS tags
 FROM saved_jobs_table sj
 JOIN jobs_table j ON sj.job_id = j.job_id
 JOIN companies c ON j.company_id = c.id
+JOIN categories cat ON j.category_id = cat.id
 LEFT JOIN job_tags jt ON jt.job_id = j.job_id
 LEFT JOIN tags t ON t.id = jt.tag_id
 WHERE sj.user_id = ?
-GROUP BY sj.id, j.job_id, c.id 
+GROUP BY sj.id, j.job_id, c.id, cat.id
 ORDER BY $orderByClause
 LIMIT ? OFFSET ?";
 
