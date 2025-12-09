@@ -86,7 +86,7 @@ try {
             }
             // 2. Local: Fallback to file path
             else {
-                $firebaseCredentialsPath = __DIR__ . '/../../config/firebase_credentials.json';
+                $firebaseCredentialsPath = dirname(__DIR__, 2) . '/' . ($_ENV['FIREBASE_CREDENTIALS_PATH'] ?? 'config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
 
                 if (!file_exists($firebaseCredentialsPath)) {
                     // Throw exception to be caught below, logging the error but allowing DB delete to proceed
