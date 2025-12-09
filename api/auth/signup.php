@@ -37,7 +37,7 @@ if ($execute) {
     } else {
         $hash = password_hash($userpassword, PASSWORD_DEFAULT);
 
-        $query = "INSERT INTO users_table (firstname, lastname, email, password, role, terms) VALUES (?, ?, ?, ?, ?, ?)";
+        $query = "INSERT INTO users_table (firstname, lastname, email, password, role, terms_accepted) VALUES (?, ?, ?, ?, ?, ?)";
         $prepare = $dbconnection->prepare($query);
         $prepare->bind_param('sssssi', $firstname, $lastname, $email, $hash, $userRole, $terms);
         $execute = $prepare->execute();

@@ -25,6 +25,8 @@ $data = json_decode(file_get_contents("php://input"));
 $token = $data->token;
 $role = $data->role;
 $photoURL = $data->photoURL ?? '';
+// 1. Capture terms acceptance
+$termsAccepted = $data->termsAccepted ?? false;
 
 if (!$token || !$role || !in_array($role, ['job_seeker', 'employer'])) {
     http_response_code(400);
@@ -32,19 +34,24 @@ if (!$token || !$role || !in_array($role, ['job_seeker', 'employer'])) {
     exit;
 }
 
-// Load Firebase credentials: Use JSON string from env (prod) or file path (local)
+// 2. Validate Terms Acceptance
+if ($termsAccepted !== true) {
+    http_response_code(400);
+    echo json_encode(['status' => false, 'msg' => 'You must accept the Terms and Conditions']);
+    exit;
+}
+
+// Load Firebase credentials
 if (!empty($_ENV['FIREBASE_CREDENTIALS'])) {
-    // Production: Decode JSON string from env
     $firebaseCredentials = json_decode($_ENV['FIREBASE_CREDENTIALS'], true);
 } else {
-    // Local: Load from file path
     $firebaseCredentialsPath = dirname(__DIR__, 2) . '/' . ($_ENV['FIREBASE_CREDENTIALS_PATH'] ?? 'config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
     if (!file_exists($firebaseCredentialsPath)) {
         http_response_code(500);
         echo json_encode(['status' => false, 'msg' => 'Firebase config file missing']);
         exit;
     }
-    $firebaseCredentials = $firebaseCredentialsPath;  // Pass path directly
+    $firebaseCredentials = $firebaseCredentialsPath;
 }
 
 $factory = (new Factory)->withServiceAccount($firebaseCredentials);
@@ -82,12 +89,14 @@ if ($checkResult->num_rows > 0) {
 }
 $checkStmt->close();
 
-// Insert new user (no password for social)
-$query = "INSERT INTO users_table (firstname, lastname, email, role, firebase_uid) VALUES (?, ?, ?, ?, ?)";
+// 3. Insert new user (Added terms_accepted to query)
+// Ensure your users_table has a 'terms_accepted' column (TINYINT/BOOLEAN)
+$query = "INSERT INTO users_table (firstname, lastname, email, role, firebase_uid, terms_accepted) VALUES (?, ?, ?, ?, ?, ?)";
 $stmt = $dbconnection->prepare($query);
-$stmt->bind_param('sssss', $firstname, $lastname, $email, $role, $uid);
+$termsInt = $termsAccepted ? 1 : 0;
+$stmt->bind_param('sssssi', $firstname, $lastname, $email, $role, $uid, $termsInt);
+
 if ($stmt->execute()) {
-    // Get the ID of the newly created user
     $userId = $dbconnection->insert_id;
 
     // Auto-create role-based record
@@ -96,7 +105,6 @@ if ($stmt->execute()) {
         $insertJobSeeker->bind_param('i', $userId);
         $insertJobSeeker->execute();
 
-        // Save photoURL if provided
         if (!empty($photoURL)) {
             $updatePhoto = $dbconnection->prepare("UPDATE job_seekers_table SET profile_pic_url = ? WHERE user_id = ?");
             $updatePhoto->bind_param('si', $photoURL, $userId);
@@ -104,7 +112,6 @@ if ($stmt->execute()) {
             $updatePhoto->close();
         }
 
-        // After inserting job_seeker, update users_table
         $linkedProvidersJson = json_encode([$provider]);
         $updateUser = $dbconnection->prepare("UPDATE users_table SET linked_providers = ? WHERE user_id = ?");
         $updateUser->bind_param('si', $linkedProvidersJson, $userId);
@@ -117,7 +124,6 @@ if ($stmt->execute()) {
         $insertEmployer->bind_param('i', $userId);
         $insertEmployer->execute();
 
-        // Save photoURL if provided
         if (!empty($photoURL)) {
             $updatePhoto = $dbconnection->prepare("UPDATE employers_table SET profile_pic_url = ? WHERE user_id = ?");
             $updatePhoto->bind_param('si', $photoURL, $userId);
@@ -125,7 +131,6 @@ if ($stmt->execute()) {
             $updatePhoto->close();
         }
 
-        // After inserting employer, update users_table
         $linkedProvidersJson = json_encode([$provider]);
         $updateUser = $dbconnection->prepare("UPDATE users_table SET linked_providers = ? WHERE user_id = ?");
         $updateUser->bind_param('si', $linkedProvidersJson, $userId);
@@ -135,13 +140,12 @@ if ($stmt->execute()) {
         $insertEmployer->close();
     }
 
-    // Issue JWT
     $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 10800, 'iat' => time()];
     $jwt = JWT::encode($payload, $key, 'HS256');
     echo json_encode([
         'status' => true,
         'msg' => 'Role saved and logged in',
-        'token' => $jwt, // Return JWT
+        'token' => $jwt,
         'user' => [
             'user_id' => $userId,
             'role' => $role,
@@ -151,9 +155,8 @@ if ($stmt->execute()) {
 } else {
     error_log('Database error: ' . $stmt->error);
     http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Database error: Unable to save role']);
+     echo json_encode(['status' => false, 'msg' => 'Database error: Unable to save role']);
 }
 $stmt->close();
-
 $dbconnection->close();
 ?>
