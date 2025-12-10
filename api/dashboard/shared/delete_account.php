@@ -1,9 +1,9 @@
 <?php
-require_once __DIR__ . '/../../config/headers.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../config/middleware.php';
-require_once __DIR__ . '/../../config/cloudinary.php';
-require_once __DIR__ . '/../../vendor/autoload.php'; // Autoload for Firebase SDK
+require_once __DIR__ . '/../../../config/headers.php';
+require_once __DIR__ . '/../../../config/database.php';
+require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/cloudinary.php';
+require_once __DIR__ . '/../../../vendor/autoload.php'; // Autoload for Firebase SDK
 
 use Kreait\Firebase\Factory;
 

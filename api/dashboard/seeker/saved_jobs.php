@@ -1,8 +1,8 @@
 <?php
-require_once __DIR__ . '/../../config/headers.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../config/middleware.php';
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../../config/headers.php';
+require_once __DIR__ . '/../../../config/database.php';
+require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
 
 // Load JWT secret
 if (file_exists(dirname(__DIR__) . '/../.env')) {

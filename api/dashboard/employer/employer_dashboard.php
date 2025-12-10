@@ -1,11 +1,8 @@
 <?php
-require_once __DIR__ . '/../../config/headers.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../config/middleware.php';
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../../config/middleware.php';
 
-// Validate JWT and require job_seeker role
-$user = validateJWT('job_seeker');
+// Validate JWT and require employer role
+$user = validateJWT('employer');
 $user_id = $user['user_id'];
 
 $response = [];
