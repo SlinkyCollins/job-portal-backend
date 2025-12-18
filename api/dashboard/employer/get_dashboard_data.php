@@ -20,10 +20,11 @@ try {
     $stats = $stmt->get_result()->fetch_assoc();
 
     // 2. GET RECENT JOBS (Limit 5)
-    $jobsQuery = "SELECT job_id, title, employment_type, location, status, created_at 
-                  FROM jobs_table 
-                  WHERE employer_id = ? 
-                  ORDER BY created_at DESC LIMIT 5";
+    $jobsQuery = "SELECT j.job_id, j.title, j.employment_type, j.location, j.status, j.published_at, c.logo_url 
+                  FROM jobs_table j 
+                  LEFT JOIN companies c ON j.employer_id = c.user_id
+                  WHERE j.employer_id = ? 
+                  ORDER BY j.published_at DESC LIMIT 5";
     
     $stmt = $dbconnection->prepare($jobsQuery);
     $stmt->bind_param("i", $user_id);
