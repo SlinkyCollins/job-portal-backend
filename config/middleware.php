@@ -37,10 +37,23 @@ function validateJWT($required_role = null)
         $user_id = $decoded->user_id;
         $role = $decoded->role;
 
-        if ($required_role && $role !== $required_role) {
-            http_response_code(403);
-            echo json_encode(['status' => false, 'msg' => "Access denied. Requires $required_role role."]);
-            exit;
+        // UPDATED LOGIC: Support Array or String
+        if ($required_role) {
+            if (is_array($required_role)) {
+                // Check if user's role is in the allowed list
+                if (!in_array($role, $required_role)) {
+                    http_response_code(403);
+                    echo json_encode(['status' => false, 'msg' => "Access denied. Role not authorized."]);
+                    exit;
+                }
+            } else {
+                // Check exact match for single string
+                if ($role !== $required_role) {
+                    http_response_code(403);
+                    echo json_encode(['status' => false, 'msg' => "Access denied. Requires $required_role role."]);
+                    exit;
+                }
+            }
         }
 
         return ['user_id' => $user_id, 'role' => $role];
@@ -50,3 +63,4 @@ function validateJWT($required_role = null)
         exit;
     }
 }
+?>    

@@ -110,11 +110,52 @@ try {
 
     // 8. Execute
     if ($stmt->execute()) {
+        $new_job_id = $dbconnection->insert_id;
+
+        // --- NEW TAGS LOGIC STARTS HERE ---
+        if (!empty($data->tags) && is_array($data->tags)) {
+            foreach ($data->tags as $tagName) {
+                $tagName = trim($tagName);
+                if (empty($tagName)) continue;
+
+                // A. Check if tag exists
+                $checkTag = $dbconnection->prepare("SELECT id FROM tags WHERE name = ?");
+                $checkTag->bind_param("s", $tagName);
+                $checkTag->execute();
+                $resTag = $checkTag->get_result();
+                
+                $tag_id = 0;
+
+                if ($rowTag = $resTag->fetch_assoc()) {
+                    // Tag exists
+                    $tag_id = $rowTag['id'];
+                } else {
+                    // Tag doesn't exist, create it
+                    $insertTag = $dbconnection->prepare("INSERT INTO tags (name) VALUES (?)");
+                    $insertTag->bind_param("s", $tagName);
+                    if ($insertTag->execute()) {
+                        $tag_id = $dbconnection->insert_id;
+                    }
+                    $insertTag->close();
+                }
+                $checkTag->close();
+
+                // B. Link Job to Tag
+                if ($tag_id > 0) {
+                    $linkTag = $dbconnection->prepare("INSERT INTO job_tags (job_id, tag_id) VALUES (?, ?)");
+                    $linkTag->bind_param("ii", $new_job_id, $tag_id);
+                    $linkTag->execute();
+                    $linkTag->close();
+                }
+            }
+        }
+        // --- NEW TAGS LOGIC ENDS HERE ---
+
         http_response_code(201);
         echo json_encode([
             "status" => true,
             "message" => "Job posted successfully!",
-            "job_id" => $dbconnection->insert_id
+            "job_id" => $new_job_id
         ]);
     } else {
         throw new Exception("Execute failed: " . $stmt->error);
