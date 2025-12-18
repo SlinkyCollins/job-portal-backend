@@ -37,7 +37,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             throw new Exception("Invalid user role for profile photo.");
         }
 
-        // 3. Upload to Cloudinary
+        // 3. CHECK FOR EXISTING PHOTO AND DELETE IF EXISTS
+        $checkQuery = "SELECT profile_pic_public_id FROM $table WHERE user_id = ?";
+        $stmt = $dbconnection->prepare($checkQuery);
+        $stmt->bind_param('i', $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $existing = $result->fetch_assoc();
+        $stmt->close();
+
+        // If exists, delete from Cloudinary
+        if ($existing && !empty($existing['profile_pic_public_id'])) {
+            try {
+                $cloudinary->uploadApi()->destroy($existing['profile_pic_public_id'], ['resource_type' => 'image']);
+            } catch (Exception $e) {
+                // Continue even if delete fails (don't block the new upload)
+                error_log("Failed to delete old image: " . $e->getMessage());
+            }
+        }
+
+        // 4. Upload to Cloudinary
         $uploadResult = $cloudinary->uploadApi()->upload($file['tmp_name'], [
             'folder' => 'jobnet/profile_photos',
             'resource_type' => 'image',
@@ -48,11 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         $photo_url = $uploadResult['secure_url'];
         $public_id = $uploadResult['public_id'];
 
-        // 4. Update Database (Dynamic Table)
+        // 5. Update Database (Dynamic Table)
         $query = "UPDATE $table SET profile_pic_url = ?, profile_pic_public_id = ? WHERE user_id = ?";
         $stmt = $dbconnection->prepare($query);
         $stmt->bind_param('ssi', $photo_url, $public_id, $user_id);
-        
+
         if ($stmt->execute()) {
             echo json_encode([
                 'status' => true,
