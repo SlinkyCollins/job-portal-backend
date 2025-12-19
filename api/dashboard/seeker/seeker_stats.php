@@ -3,41 +3,59 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 
-// Validate JWT and require job_seeker role
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
 
 $shortlisted = 0;
 $applied = 0;
+$accepted = 0;
+$saved = 0;
 
-// Get shortlisted count (jobs where user was shortlisted)
-$shortlistedQuery = "SELECT COUNT(*) as count FROM applications_table WHERE seeker_id = ? AND status = 'shortlisted'";
-if ($stmt = $dbconnection->prepare($shortlistedQuery)) {
+try {
+    // 1. Total Applied (All applications)
+    $queryApplied = "SELECT COUNT(*) as count FROM applications_table WHERE seeker_id = ? AND status != 'retracted'";
+    $stmt = $dbconnection->prepare($queryApplied);
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
-    $res = $stmt->get_result();
-    $shortlisted = $res ? (int) $res->fetch_assoc()['count'] : 0;
+    $applied = $stmt->get_result()->fetch_assoc()['count'];
     $stmt->close();
-} else {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'DB prepare error (shortlisted)']);
-    exit;
-}
 
-// Get applied jobs count
-$appliedQuery = "SELECT COUNT(*) as count FROM applications_table WHERE seeker_id = ? AND status != 'retracted'";
-if ($stmt = $dbconnection->prepare($appliedQuery)) {
+    // 2. Shortlisted (Your application was shortlisted by employer)
+    $queryShortlisted = "SELECT COUNT(*) as count FROM applications_table WHERE seeker_id = ? AND status = 'shortlisted'";
+    $stmt = $dbconnection->prepare($queryShortlisted);
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
-    $res = $stmt->get_result();
-    $applied = $res ? (int) $res->fetch_assoc()['count'] : 0;
+    $shortlisted_apps = $stmt->get_result()->fetch_assoc()['count'];
     $stmt->close();
-} else {
+
+    // 3. Accepted (You got the job!)
+    $queryAccepted = "SELECT COUNT(*) as count FROM applications_table WHERE seeker_id = ? AND status = 'accepted'";
+    $stmt = $dbconnection->prepare($queryAccepted);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $accepted = $stmt->get_result()->fetch_assoc()['count'];
+    $stmt->close();
+
+    // 4. Saved Jobs (Jobs you bookmarked)
+    $querySaved = "SELECT COUNT(*) as count FROM saved_jobs_table WHERE user_id = ?";
+    $stmt = $dbconnection->prepare($querySaved);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $saved = $stmt->get_result()->fetch_assoc()['count'];
+    $stmt->close();
+
+    echo json_encode([
+        "status" => true,
+        "data" => [
+            "applied" => $applied,
+            "shortlisted_apps" => $shortlisted_apps,
+            "accepted" => $accepted,
+            "saved_jobs" => $saved
+        ]
+    ]);
+
+} catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'DB prepare error (applied)']);
-    exit;
+    echo json_encode(["status" => false, "message" => $e->getMessage()]);
 }
-
-echo json_encode(['status' => true, 'shortlisted' => $shortlisted, 'appliedJobs' => $applied]);
-
-$dbconnection->close();
+?>
