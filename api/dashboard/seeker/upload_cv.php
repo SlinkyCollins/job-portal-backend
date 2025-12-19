@@ -39,6 +39,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     }
 
     try {
+        // Check for existing CV and delete if exists
+        $select = $dbconnection->prepare("SELECT cv_public_id FROM job_seekers_table WHERE user_id = ?");
+        $select->bind_param('i', $user_id);
+        $select->execute();
+        $result = $select->get_result();
+        $row = $result->fetch_assoc();
+        $select->close();
+
+        if ($row && !empty($row['cv_public_id'])) {
+            try {
+                $cloudinary->uploadApi()->destroy($row['cv_public_id'], ['resource_type' => 'raw']);
+            } catch (Exception $e) {
+                // Continue even if delete fails
+            }
+        }
+
         // Upload with extension in public_id
         $uploadResult = $cloudinary->uploadApi()->upload($file['tmp_name'], [
             'folder' => 'jobnet/cvs',

@@ -22,6 +22,7 @@ if (empty($name) || empty($location) || empty($description)) {
 
 // 4. Handle Logo Upload (Cloudinary)
 $logo_url = null;
+$logo_public_id = null;
 
 if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
     $file = $_FILES['logo'];
@@ -38,6 +39,25 @@ if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
     }
 
     try {
+        // CHECK FOR EXISTING PHOTO AND DELETE IF EXISTS
+        $checkQuery = "SELECT logo_public_id FROM companies WHERE user_id = ?";
+        $stmt = $dbconnection->prepare($checkQuery);
+        $stmt->bind_param('i', $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $existing = $result->fetch_assoc();
+        $stmt->close();
+
+        // If exists, delete from Cloudinary
+        if ($existing && !empty($existing['logo_public_id'])) {
+            try {
+                $cloudinary->uploadApi()->destroy($existing['logo_public_id'], ['resource_type' => 'image']);
+            } catch (Exception $e) {
+                // Continue even if delete fails (don't block the new upload)
+                error_log("Failed to delete old image: " . $e->getMessage());
+            }
+        }
+
         // Upload to Cloudinary
         $uploadResult = $cloudinary->uploadApi()->upload($file['tmp_name'], [
             'folder' => 'jobnet/company_logos',
@@ -46,6 +66,7 @@ if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
             'overwrite' => true
         ]);
         $logo_url = $uploadResult['secure_url'];
+        $logo_public_id = $uploadResult['public_id'];
     } catch (Exception $e) {
         echo json_encode(['status' => false, 'message' => 'Logo upload failed: ' . $e->getMessage()]);
         exit;
@@ -67,26 +88,14 @@ try {
         // --- UPDATE EXISTING COMPANY ---
         $company_id = $existingCompany['id'];
 
-        if ($logo_url && !empty($website)) {
-            // Update ALL fields including Logo and Website
-            $updateQuery = "UPDATE companies SET name=?, location=?, website=?, description=?, logo_url=? WHERE id=?";
+        if ($logo_url) {
+            $updateQuery = "UPDATE companies SET name=?, location=?, website=?, description=?, logo_url=?, logo_public_id=? WHERE id=?";
             $stmt = $dbconnection->prepare($updateQuery);
-            $stmt->bind_param("sssssi", $name, $location, $website, $description, $logo_url, $company_id);
-        } else if ($logo_url) {
-            // Update fields including Logo but excluding Website
-            $updateQuery = "UPDATE companies SET name=?, location=?, description=?, logo_url=? WHERE id=?";
-            $stmt = $dbconnection->prepare($updateQuery);
-            $stmt->bind_param("ssssi", $name, $location, $description, $logo_url, $company_id);
-        } else if (!empty($website)) {
-            // Update fields including Website but excluding Logo
+            $stmt->bind_param("ssssssi", $name, $location, $website, $description, $logo_url, $logo_public_id, $company_id);
+        } else {
             $updateQuery = "UPDATE companies SET name=?, location=?, website=?, description=? WHERE id=?";
             $stmt = $dbconnection->prepare($updateQuery);
             $stmt->bind_param("ssssi", $name, $location, $website, $description, $company_id);
-        } else {
-            // Update fields EXCEPT Logo and Website
-            $updateQuery = "UPDATE companies SET name=?, location=?, description=? WHERE id=?";
-            $stmt = $dbconnection->prepare($updateQuery);
-            $stmt->bind_param("sssi", $name, $location, $description, $company_id);
         }
 
         if ($stmt->execute()) {
@@ -101,9 +110,9 @@ try {
         $dbconnection->begin_transaction();
 
         try {
-            $insertQuery = "INSERT INTO companies (name, location, website, description, user_id, logo_url) VALUES (?, ?, ?, ?, ?, ?)";
+            $insertQuery = "INSERT INTO companies (name, location, website, description, user_id, logo_url, logo_public_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
             $stmt = $dbconnection->prepare($insertQuery);
-            $stmt->bind_param("ssssis", $name, $location, $website, $description, $user_id, $logo_url);
+            $stmt->bind_param("ssssiss", $name, $location, $website, $description, $user_id, $logo_url, $logo_public_id);
 
             if (!$stmt->execute()) {
                 throw new Exception("Insert failed: " . $stmt->error);

@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 
-$user = validateJWT('job_seeker');
+$user = validateJWT(); // Any role
 $user_id = $user['user_id'];
 
 $data = json_decode(file_get_contents('php://input'));
