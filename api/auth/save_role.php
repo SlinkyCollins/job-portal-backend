@@ -20,12 +20,10 @@ if (empty($_ENV['JWT_SECRET'])) {
 }
 
 $key = $_ENV['JWT_SECRET'];
-
 $data = json_decode(file_get_contents("php://input"));
 $token = $data->token;
 $role = $data->role;
 $photoURL = $data->photoURL ?? '';
-// 1. Capture terms acceptance
 $termsAccepted = $data->termsAccepted ?? false;
 
 if (!$token || !$role || !in_array($role, ['job_seeker', 'employer'])) {
@@ -34,7 +32,6 @@ if (!$token || !$role || !in_array($role, ['job_seeker', 'employer'])) {
     exit;
 }
 
-// 2. Validate Terms Acceptance
 if ($termsAccepted !== true) {
     http_response_code(400);
     echo json_encode(['status' => false, 'msg' => 'You must accept the Terms and Conditions']);
@@ -65,83 +62,62 @@ try {
     $name = $verifiedIdToken->claims()->get('name') ?? '';
     $firebaseClaims = $verifiedIdToken->claims()->get('firebase', []);
     $provider = $firebaseClaims['sign_in_provider'] ?? 'unknown';
+    
     $nameParts = explode(' ', $name);
     $firstname = $nameParts[0] ?? '';
     $lastname = implode(' ', array_slice($nameParts, 1)) ?? '';
 } catch (Exception $e) {
-    error_log('Firebase token verification failed: ' . $e->getMessage());
     http_response_code(401);
     echo json_encode(['status' => false, 'msg' => 'Invalid Firebase token']);
     exit;
 }
 
-// Check if user already exists
-$checkQuery = "SELECT user_id FROM users_table WHERE firebase_uid = ?";
+// Map provider to DB column
+$googleId = null;
+$facebookId = null;
+$providerName = '';
+
+if ($provider === 'google.com') {
+    $googleId = $uid;
+    $providerName = 'google';
+} elseif ($provider === 'facebook.com') {
+    $facebookId = $uid;
+    $providerName = 'facebook';
+}
+
+// Check if user already exists (Safety check)
+$checkQuery = "SELECT user_id FROM users_table WHERE email = ? OR firebase_uid = ?";
 $checkStmt = $dbconnection->prepare($checkQuery);
-$checkStmt->bind_param('s', $uid);
+$checkStmt->bind_param('ss', $email, $uid);
 $checkStmt->execute();
-$checkResult = $checkStmt->get_result();
-if ($checkResult->num_rows > 0) {
+if ($checkStmt->get_result()->num_rows > 0) {
     http_response_code(409);
     echo json_encode(['status' => false, 'msg' => 'User already exists']);
-    $checkStmt->close();
     exit;
 }
 $checkStmt->close();
 
-// 3. Insert new user (Added terms_accepted to query)
-// Ensure your users_table has a 'terms_accepted' column (TINYINT/BOOLEAN)
-$query = "INSERT INTO users_table (firstname, lastname, email, role, firebase_uid, terms_accepted) VALUES (?, ?, ?, ?, ?, ?)";
+// Insert new user with specific ID columns
+$query = "INSERT INTO users_table (firstname, lastname, email, role, firebase_uid, google_id, facebook_id, terms_accepted, linked_providers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $dbconnection->prepare($query);
 $termsInt = $termsAccepted ? 1 : 0;
-$stmt->bind_param('sssssi', $firstname, $lastname, $email, $role, $uid, $termsInt);
+$linkedProvidersJson = json_encode($providerName ? [$providerName] : []);
+
+$stmt->bind_param('sssssssis', $firstname, $lastname, $email, $role, $uid, $googleId, $facebookId, $termsInt, $linkedProvidersJson);
 
 if ($stmt->execute()) {
     $userId = $dbconnection->insert_id;
 
-    // Auto-create role-based record
-    if ($role === 'job_seeker') {
-        $insertJobSeeker = $dbconnection->prepare("INSERT INTO job_seekers_table (user_id) VALUES (?)");
-        $insertJobSeeker->bind_param('i', $userId);
-        $insertJobSeeker->execute();
-
-        if (!empty($photoURL)) {
-            $updatePhoto = $dbconnection->prepare("UPDATE job_seekers_table SET profile_pic_url = ? WHERE user_id = ?");
-            $updatePhoto->bind_param('si', $photoURL, $userId);
-            $updatePhoto->execute();
-            $updatePhoto->close();
-        }
-
-        $linkedProvidersJson = json_encode([$provider]);
-        $updateUser = $dbconnection->prepare("UPDATE users_table SET linked_providers = ? WHERE user_id = ?");
-        $updateUser->bind_param('si', $linkedProvidersJson, $userId);
-        $updateUser->execute();
-        $updateUser->close();
-
-        $insertJobSeeker->close();
-    } elseif ($role === 'employer') {
-        $insertEmployer = $dbconnection->prepare("INSERT INTO employers_table (user_id) VALUES (?)");
-        $insertEmployer->bind_param('i', $userId);
-        $insertEmployer->execute();
-
-        if (!empty($photoURL)) {
-            $updatePhoto = $dbconnection->prepare("UPDATE employers_table SET profile_pic_url = ? WHERE user_id = ?");
-            $updatePhoto->bind_param('si', $photoURL, $userId);
-            $updatePhoto->execute();
-            $updatePhoto->close();
-        }
-
-        $linkedProvidersJson = json_encode([$provider]);
-        $updateUser = $dbconnection->prepare("UPDATE users_table SET linked_providers = ? WHERE user_id = ?");
-        $updateUser->bind_param('si', $linkedProvidersJson, $userId);
-        $updateUser->execute();
-        $updateUser->close();
-
-        $insertEmployer->close();
-    }
+    // Create Role Table Entry
+    $table = ($role === 'employer') ? 'employers_table' : 'job_seekers_table';
+    $insertRole = $dbconnection->prepare("INSERT INTO $table (user_id, profile_pic_url) VALUES (?, ?)");
+    $insertRole->bind_param('is', $userId, $photoURL);
+    $insertRole->execute();
+    $insertRole->close();
 
     $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 10800, 'iat' => time()];
     $jwt = JWT::encode($payload, $key, 'HS256');
+    
     echo json_encode([
         'status' => true,
         'msg' => 'Role saved and logged in',
@@ -153,9 +129,8 @@ if ($stmt->execute()) {
         ]
     ]);
 } else {
-    error_log('Database error: ' . $stmt->error);
     http_response_code(500);
-     echo json_encode(['status' => false, 'msg' => 'Database error: Unable to save role']);
+    echo json_encode(['status' => false, 'msg' => 'Database error: Unable to save role']);
 }
 $stmt->close();
 $dbconnection->close();
