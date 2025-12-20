@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use Kreait\Firebase\Factory;
 
-// 1. Validate JWT (Any Role)
+// 1. Validate JWT
 $user = validateJWT();
 $user_id = $user['user_id'];
 $role = $user['role'];
@@ -24,11 +24,9 @@ if ($confirmation !== 'DELETE') {
 try {
     $dbconnection->begin_transaction();
 
-    // 2. Determine Table based on Role
+    // 2. Fetch Cloudinary/Firebase Info
     $table = ($role === 'employer') ? 'employers_table' : 'job_seekers_table';
-
-    // 3. Fetch Cloudinary IDs
-    // Note: Both tables use 'profile_pic_public_id'. Only seekers have 'cv_public_id'.
+    
     $query = "SELECT u.firebase_uid, t.profile_pic_public_id ";
     if ($role === 'job_seeker') {
         $query .= ", t.cv_public_id ";
@@ -41,60 +39,54 @@ try {
     $userData = $stmt->get_result()->fetch_assoc();
     $stmt->close();
 
-    // 4. Delete from Cloudinary
+    // 3. Delete External Files (Cloudinary)
     if ($userData) {
         $uploadApi = $cloudinary->uploadApi();
         
-        // Profile Pic (Both roles)
         if (!empty($userData['profile_pic_public_id'])) {
             try { $uploadApi->destroy($userData['profile_pic_public_id'], ['resource_type' => 'image']); } catch (Exception $e) {}
         }
 
-        // CV (Seeker only)
         if ($role === 'job_seeker' && !empty($userData['cv_public_id'])) {
             try { $uploadApi->destroy($userData['cv_public_id'], ['resource_type' => 'raw']); } catch (Exception $e) {}
         }
     }
 
-    // --- 5. Delete from Firebase Auth (Best Effort) ---
+    // 4. Delete from Firebase Auth
     if ($userData && !empty($userData['firebase_uid'])) {
         try {
-            // Initialize Firebase Admin SDK
-            $firebaseCredentials = null;
-
-            // 1. Production: Check for JSON string in environment variable
             if (!empty($_ENV['FIREBASE_CREDENTIALS'])) {
-                $firebaseCredentials = json_decode($_ENV['FIREBASE_CREDENTIALS'], true);
-            }
-            // 2. Local: Fallback to file path
-            else {
-                $firebaseCredentialsPath = dirname(__DIR__, 2) . '/' . ($_ENV['FIREBASE_CREDENTIALS_PATH'] ?? 'config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
-
-                if (!file_exists($firebaseCredentialsPath)) {
-                    // Throw exception to be caught below, logging the error but allowing DB delete to proceed
-                    throw new Exception("Firebase credentials file missing at: " . $firebaseCredentialsPath);
-                }
-                $firebaseCredentials = $firebaseCredentialsPath;
+                $creds = json_decode($_ENV['FIREBASE_CREDENTIALS'], true);
+            } else {
+                $path = dirname(__DIR__, 2) . '/' . ($_ENV['FIREBASE_CREDENTIALS_PATH'] ?? 'config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
+                if (file_exists($path)) $creds = $path;
             }
 
-            $factory = (new Factory)->withServiceAccount($firebaseCredentials);
-            $auth = $factory->createAuth();
-
-            // Delete the user from Firebase Auth
-            $auth->deleteUser($userData['firebase_uid']);
-
-        } catch (\Kreait\Firebase\Exception\Auth\UserNotFound $e) {
-            // User already deleted in Firebase, continue safely
+            if (isset($creds)) {
+                $factory = (new Factory)->withServiceAccount($creds);
+                $auth = $factory->createAuth();
+                $auth->deleteUser($userData['firebase_uid']);
+            }
         } catch (Exception $e) {
-            // Log error but continue to ensure local DB account is deleted
-            error_log("Firebase Delete Error for user $user_id: " . $e->getMessage());
+            error_log("Firebase Delete Error: " . $e->getMessage());
         }
     }
 
-    // --- 6. Delete the user account from DB ---
+    // 5. Final User Delete (Database handles the rest!)
+    // Because of ON DELETE CASCADE, this single line deletes:
+    // - The User
+    // - The Employer/Seeker profile
+    // - The Company profile (if employer)
+    // - All Jobs posted by them
+    // - All Applications to those jobs
+    // - All Saved Jobs entries
     $delStmt = $dbconnection->prepare("DELETE FROM users_table WHERE user_id = ?");
     $delStmt->bind_param('i', $user_id);
     $delStmt->execute();
+
+    if ($delStmt->affected_rows === 0) {
+        throw new Exception("User not found or already deleted");
+    }
 
     $dbconnection->commit();
     echo json_encode(['status' => true, 'message' => 'Account deleted successfully']);
