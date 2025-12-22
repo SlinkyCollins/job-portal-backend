@@ -5,11 +5,6 @@ require_once __DIR__ . '/../../../config/middleware.php';
 
 // 1. Security: Admin Only
 $user = validateJWT('admin');
-if ($user['role'] !== 'admin') {
-    http_response_code(403);
-    echo json_encode(['status' => false, 'message' => 'Access Denied']);
-    exit;
-}
 
 // 2. Helper to run count queries
 function getCount($db, $sql) {

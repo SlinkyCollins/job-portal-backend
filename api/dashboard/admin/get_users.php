@@ -4,11 +4,8 @@ require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 
 $user = validateJWT('admin');
-if ($user['role'] !== 'admin') {
-    http_response_code(403);
-    echo json_encode(['status' => false, 'message' => 'Access Denied']);
-    exit;
-}
+$role = $user['role'];
+$user_id = $user['user_id'];
 
 // Fetch users (excluding the current admin to prevent self-deletion accidents)
 // We also join with jobs_table to count how many jobs an employer has posted
@@ -18,14 +15,13 @@ $query = "SELECT
             u.lastname, 
             u.email, 
             u.role, 
-            u.created_at,
+            u.createdat,
             (SELECT COUNT(*) FROM jobs_table WHERE employer_id = u.user_id) as job_count
           FROM users_table u 
           WHERE u.user_id != ? 
-          ORDER BY u.created_at DESC";
-
+          ORDER BY u.createdat DESC";
 $stmt = $dbconnection->prepare($query);
-$stmt->bind_param('i', $user['user_id']);
+$stmt->bind_param('i', $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
