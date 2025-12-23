@@ -2,9 +2,10 @@
 
 ![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)
 
-The server-side infrastructure for **JobNet**. This is a **Dockerized**, pure PHP API designed for speed and portability. It implements a custom routing engine and a **Unified Identity Layer** that bridges Firebase Auth with a relational MySQL database.
+The server-side infrastructure for **JobNet**. This is a **Dockerized**, pure PHP API designed for speed and portability. It functions as a true MVP backend: everything is functional, testable, and connected. It implements a custom routing engine and a **Unified Identity Layer** that bridges Firebase Auth with a relational MySQL database.
 
 ### 🧠 Core Architecture
+JobNet is not just a concept demo; it implements complex system design patterns to ensure scalability and security.
 
 #### 1. The Dual-Pipeline Authentication System
 JobNet does not rely on a single auth provider. Instead, it uses a **Hybrid Strategy**:
@@ -19,7 +20,7 @@ To support global job listings, the `all_jobs` endpoint implements a caching str
 * Dynamically normalizes salary sorting via SQL `CASE` statements.
 
 #### 3. Security & Middleware
-* **Unified JWT Middleware:** `validateJWT()` intercepts requests from *both* auth pipelines. It enforces strict Role-Based Access Control (RBAC) ensuring an Employer cannot access Seeker endpoints.
+* **Unified JWT Middleware:** `validateJWT()` intercepts requests from *both* auth pipelines. It enforces strict Role-Based Access Control (RBAC) ensuring an Employer cannot access Job Seeker endpoints.
 * **Cloudinary Integration:** Direct secure signing for CV and Logo uploads/deletions.
 
 ---
@@ -45,20 +46,17 @@ The Identity Engine. Handles the complexity of merging two authentication worlds
 ### `dashboard/`
 Contains role-specific protected endpoints. The API strictly segregates logic here:
 
-### `admin/`
-System statistics, user moderation, and category management.
+*  `admin/`: Administrative tasks, system monitoring, and comprehensive user management tools.
 
-### `employer/`
-CRUD operations for Job Posts and Applicant Tracking Systems (ATS).
+* `employer/`: CRUD operations for Job Posts and Applicant Tracking Systems (ATS).
 
-### `seeker/`
-Profile management, Resume uploads, and "Saved Jobs" functionality.
+* `seeker/`: User-specific endpoints for job seekers to manage their profiles, resume uploads, and job interests.
 
 ### `jobs/`
-Manages public job listings. Contains the Search & Filter Engine, which handles multi-currency salary filtering and tag-based searches.
+Manages public job listings. Contains the **Search & Filter Engine**, which handles multi-currency salary filtering and tag-based searches.
 
 ### `config/`
-Global configuration. Includes database.php (PDO Singleton), CORS headers, and the JWT decoding logic.
+Global configuration. Includes database.php (MySQLi extension), CORS headers, and the JWT decoding logic.
 
 ---
 
