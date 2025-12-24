@@ -8,22 +8,25 @@ $user = validateJWT('employer');
 $user_id = $user['user_id'];
 
 try {
-    // 2. Fetch Jobs
+    // 2. Fetch Jobs with application counts in one query
     // We select specific columns to keep it lightweight.
     // We order by ID DESC so the newest jobs appear first.
     $query = "SELECT 
-                job_id, 
-                title, 
-                employment_type, 
-                location, 
-                salary_amount, 
-                currency, 
-                status, 
-                deadline, 
-                published_at 
-              FROM jobs_table 
-              WHERE employer_id = ? 
-              ORDER BY job_id DESC";
+                j.job_id, 
+                j.title, 
+                j.employment_type, 
+                j.location, 
+                j.salary_amount, 
+                j.currency, 
+                j.status, 
+                j.deadline, 
+                j.published_at,
+                COUNT(a.application_id) AS application_count
+              FROM jobs_table j
+              LEFT JOIN applications_table a ON j.job_id = a.job_id
+              WHERE j.employer_id = ?
+              GROUP BY j.job_id
+              ORDER BY j.job_id DESC";
 
     $stmt = $dbconnection->prepare($query);
     $stmt->bind_param("i", $user_id);
@@ -32,10 +35,9 @@ try {
 
     $jobs = [];
     while ($row = $result->fetch_assoc()) {
-        // Add a placeholder for application count (we will implement this later)
-        $row['application_count'] = 0; 
         $jobs[] = $row;
     }
+    $stmt->close();
 
     echo json_encode([
         "status" => true,
