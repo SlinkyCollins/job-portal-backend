@@ -10,79 +10,92 @@ $userpassword = $data->pword;
 $userRole = $data->role;
 $terms = $data->terms;
 
-if (strlen($userpassword) < 6) {
-    $response = [
-        'status' => false,
-        'msg' => 'Password must be at least 6 characters long'
-    ];
-    echo json_encode($response);
+// Basic validation
+if (
+    empty($firstname) || empty($lastname) || empty($email) ||
+    empty($userpassword) || empty($userRole) || !$terms
+) {
+    echo json_encode(['status' => false, 'msg' => 'All fields are required and terms must be accepted.']);
     exit;
 }
 
-$queryone = "SELECT * FROM users_table WHERE email= ?";
-$stmt = $dbconnection->prepare($queryone);
-$stmt->bind_param('s', $email);
-$execute = $stmt->execute();
+if (strlen($userpassword) < 6) {
+    echo json_encode(['status' => false, 'msg' => 'Password must be at least 6 characters long']);
+    exit;
+}
 
-if ($execute) {
-    $result = $stmt->get_result();
-    if ($result->num_rows > 0) {
-        http_response_code(403);
+try {
+    // Check for existing email
+    $queryone = "SELECT 1 FROM users_table WHERE email= ?";
+    $stmt = $dbconnection->prepare($queryone);
+    $stmt->bind_param('s', $email);
+    $execute = $stmt->execute();
+    if (!$execute) {
         $response = [
-            'status' => true,
-            'msg' => 'Email already exists',
+            'status' => false,
+            'msg' => 'Query execution failed or no internet connection available: ' . $stmt->error
         ];
         echo json_encode($response);
         exit;
-    } else {
-        $hash = password_hash($userpassword, PASSWORD_DEFAULT);
-
-        $query = "INSERT INTO users_table (firstname, lastname, email, password, role, terms_accepted) VALUES (?, ?, ?, ?, ?, ?)";
-        $prepare = $dbconnection->prepare($query);
-        $prepare->bind_param('sssssi', $firstname, $lastname, $email, $hash, $userRole, $terms);
-        $execute = $prepare->execute();
-
-        if ($execute) {
-            // Get the ID of the newly created user
-            $newUserId = $dbconnection->insert_id;
-
-            // Auto-create role-based record
-            if ($userRole === 'job_seeker') {
-                $insertJobSeeker = $dbconnection->prepare("INSERT INTO job_seekers_table (user_id) VALUES (?)");
-                $insertJobSeeker->bind_param('i', $newUserId);
-                $insertJobSeeker->execute();
-                $insertJobSeeker->close();
-            } elseif ($userRole === 'employer') {
-                $insertEmployer = $dbconnection->prepare("INSERT INTO employers_table (user_id) VALUES (?)");
-                $insertEmployer->bind_param('i', $newUserId);
-                $insertEmployer->execute();
-                $insertEmployer->close();
-            }
-
-            http_response_code(201);
-            $response = [
-                'status' => true,
-                'msg' => 'User signed up successfully',
-            ];
-            echo json_encode($response);
-        } else {
-            http_response_code(500);
-            $response = [
-                'status' => false,
-                'msg' => 'Sign up failed due to an error, please try again'
-            ];
-            echo json_encode($response);
-        }
     }
-} else {
-    $response = [
-        'status' => false,
-        'msg' => 'Query execution failed or no internet connection available: ' . $dbconnection->error
-    ];
-    echo json_encode($response);
-    exit;
+    $stmt->store_result();
+    if ($stmt->num_rows > 0) {
+        http_response_code(403);
+        echo json_encode(['status' => false, 'msg' => 'Email already exists']);
+        $stmt->close();
+        exit;
+    }
+    $stmt->close();
+
+    // Start transaction
+    $dbconnection->begin_transaction();
+
+    $hash = password_hash($userpassword, PASSWORD_DEFAULT);
+
+    $query = "INSERT INTO users_table (firstname, lastname, email, password, role, terms_accepted) VALUES (?, ?, ?, ?, ?, ?)";
+    $prepare = $dbconnection->prepare($query);
+    $prepare->bind_param('sssssi', $firstname, $lastname, $email, $hash, $userRole, $terms);
+    $execute = $prepare->execute();
+    if (!$execute) {
+        http_response_code(500);
+        $response = [
+            'status' => false,
+            'msg' => 'Sign up failed due to an error, please try again'
+        ];
+        echo json_encode($response);
+        throw new Exception('User insert failed: ' . $prepare->error);
+    }
+    $newUserId = $dbconnection->insert_id;
+    $prepare->close();
+
+    // Auto-create role-based record
+    if ($userRole === 'job_seeker') {
+        $insertJobSeeker = $dbconnection->prepare("INSERT INTO job_seekers_table (user_id) VALUES (?)");
+        $insertJobSeeker->bind_param('i', $newUserId);
+        if (!$insertJobSeeker->execute()) {
+            throw new Exception('Job seeker insert failed: ' . $insertJobSeeker->error);
+        }
+        $insertJobSeeker->close();
+    } elseif ($userRole === 'employer') {
+        $insertEmployer = $dbconnection->prepare("INSERT INTO employers_table (user_id) VALUES (?)");
+        $insertEmployer->bind_param('i', $newUserId);
+        if (!$insertEmployer->execute()) {
+            throw new Exception('Employer insert failed: ' . $insertEmployer->error);
+        }
+        $insertEmployer->close();
+    }
+
+    // Commit transaction
+    $dbconnection->commit();
+
+    http_response_code(201);
+    echo json_encode(['status' => true, 'msg' => 'User signed up successfully']);
+
+} catch (Exception $e) {
+    $dbconnection->rollback();
+    http_response_code(500);
+    echo json_encode(['status' => false, 'msg' => 'Sign up failed: ' . $e->getMessage()]);
 }
 
 $dbconnection->close();
-
 ?>
