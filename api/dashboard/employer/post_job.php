@@ -59,6 +59,13 @@ try {
     // If provided, use it. If empty, default to 30 days from now.
     $deadline = !empty($data->deadline) ? $data->deadline : date('Y-m-d', strtotime('+30 days'));
 
+    // Add validation: Deadline must be in the future if provided
+    if (!empty($data->deadline) && strtotime($data->deadline) <= time()) {
+        http_response_code(400);
+        echo json_encode(["status" => false, "message" => "Deadline must be a future date."]);
+        exit;
+    }
+
     // 6. Prepare INSERT Query
     $query = "INSERT INTO jobs_table (
                 title, 
@@ -81,7 +88,7 @@ try {
                 company_id, 
                 status,
                 published_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW())";
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())";
 
     $stmt = $dbconnection->prepare($query);
 
@@ -91,8 +98,8 @@ try {
         $data->title,
         $data->category_id,
         $data->employment_type,
-        $data->location,        
-        $data->salary_amount,   
+        $data->location,
+        $data->salary_amount,
         $data->currency,
         $data->salary_duration,
         $data->experience_level,
@@ -116,14 +123,15 @@ try {
         if (!empty($data->tags) && is_array($data->tags)) {
             foreach ($data->tags as $tagName) {
                 $tagName = trim($tagName);
-                if (empty($tagName)) continue;
+                if (empty($tagName))
+                    continue;
 
                 // A. Check if tag exists
                 $checkTag = $dbconnection->prepare("SELECT id FROM tags WHERE name = ?");
                 $checkTag->bind_param("s", $tagName);
                 $checkTag->execute();
                 $resTag = $checkTag->get_result();
-                
+
                 $tag_id = 0;
 
                 if ($rowTag = $resTag->fetch_assoc()) {

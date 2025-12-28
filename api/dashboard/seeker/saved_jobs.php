@@ -116,7 +116,7 @@ $count_stmt = $dbconnection->prepare($count_query);
 $count_stmt->bind_param("i", $user_id);
 $count_stmt->execute();
 $count_result = $count_stmt->get_result();
-$total_jobs = $count_result->fetch_assoc()['total'];
+$total_jobs = $count_result->fetch_assoc()['total'] ?? 0;
 $total_pages = ceil($total_jobs / $per_page);
 $count_stmt->close();
 
@@ -127,9 +127,9 @@ $query = "SELECT
     c.name AS company_name, c.logo_url AS company_logo,
     GROUP_CONCAT(t.name SEPARATOR ',') AS tags
 FROM saved_jobs_table sj
-JOIN jobs_table j ON sj.job_id = j.job_id
-JOIN companies c ON j.company_id = c.id
-JOIN categories cat ON j.category_id = cat.id
+LEFT JOIN jobs_table j ON sj.job_id = j.job_id
+LEFT JOIN companies c ON j.company_id = c.id
+LEFT JOIN categories cat ON j.category_id = cat.id
 LEFT JOIN job_tags jt ON jt.job_id = j.job_id
 LEFT JOIN tags t ON t.id = jt.tag_id
 WHERE sj.user_id = ?
@@ -173,13 +173,13 @@ if ($result && $result->num_rows > 0) {
     ];
 } else {
     $response = [
-        'status' => true, // Still true, just empty
+        'status' => true, // Still true, just empty result
         'savedJobs' => [],
         'pagination' => [
             'current_page' => $page,
             'per_page' => $per_page,
-            'total_jobs' => 0,
-            'total_pages' => 0
+            'total_jobs' => $total_jobs,
+            'total_pages' => $total_pages
         ]
     ];
 }
