@@ -47,7 +47,7 @@ if ($auth && str_starts_with($auth, 'Bearer ')) {
 // Get job details
 $query = "SELECT 
     j.job_id, j.title, j.overview, j.description, j.requirements, j.responsibilities, 
-    j.employer_id, j.company_id, j.status, j.published_at, j.updated_at, 
+    j.employer_id, j.company_id, j.status, j.deadline, j.published_at, j.updated_at, 
     j.location AS job_location, j.salary_amount, j.currency, j.salary_duration, 
     j.experience_level, j.english_fluency, j.employment_type, j.category_id, 
     j.nice_to_have, j.benefits,
@@ -70,6 +70,7 @@ $job = $result->fetch_assoc();
 $job['hasApplied'] = false;
 $job['isSaved'] = false;
 $job['isRetracted'] = false;
+$job['is_closed'] = ($job['status'] === 'closed' || strtotime($job['deadline']) < time());  
 
 // If logged in and role is job_seeker, check if already applied or saved or retracted
 if ($user_id && $role === 'job_seeker') {

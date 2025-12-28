@@ -26,10 +26,11 @@ if (strlen($userpassword) < 6) {
 
 try {
     // Check for existing email
-    $queryone = "SELECT 1 FROM users_table WHERE email= ?";
+    $queryone = "SELECT user_id, google_id, facebook_id FROM users_table WHERE email = ?";
     $stmt = $dbconnection->prepare($queryone);
     $stmt->bind_param('s', $email);
     $execute = $stmt->execute();
+    $result = $stmt->get_result();
     if (!$execute) {
         $response = [
             'status' => false,
@@ -38,14 +39,23 @@ try {
         echo json_encode($response);
         exit;
     }
-    $stmt->store_result();
-    if ($stmt->num_rows > 0) {
-        http_response_code(403);
-        echo json_encode(['status' => false, 'msg' => 'Email already exists']);
+    if ($result->num_rows > 0) {
+        $existingUser = $result->fetch_assoc();
+        $isSocialUser = !empty($existingUser['google_id']) || !empty($existingUser['facebook_id']);
+
+        if ($isSocialUser) {
+            http_response_code(403);
+            echo json_encode([
+                'status' => false,
+                'msg' => 'This email is already registered via Google/Facebook. Please log in using your social account or contact support to add a password.'
+            ]);
+        } else {
+            http_response_code(403);
+            echo json_encode(['status' => false, 'msg' => 'Email already exists']);
+        }
         $stmt->close();
         exit;
     }
-    $stmt->close();
 
     // Start transaction
     $dbconnection->begin_transaction();
