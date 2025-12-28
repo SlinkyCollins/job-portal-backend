@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/cloudinary.php';
-require_once __DIR__ . '/../../../vendor/autoload.php'; 
+require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use Kreait\Firebase\Factory;
 
@@ -26,7 +26,7 @@ try {
 
     // 2. Fetch Cloudinary/Firebase Info
     $table = ($role === 'employer') ? 'employers_table' : 'job_seekers_table';
-    
+
     $query = "SELECT u.firebase_uid, t.profile_pic_public_id ";
     if ($role === 'job_seeker') {
         $query .= ", t.cv_public_id ";
@@ -42,13 +42,38 @@ try {
     // 3. Delete External Files (Cloudinary)
     if ($userData) {
         $uploadApi = $cloudinary->uploadApi();
-        
+
         if (!empty($userData['profile_pic_public_id'])) {
-            try { $uploadApi->destroy($userData['profile_pic_public_id'], ['resource_type' => 'image']); } catch (Exception $e) {}
+            try {
+                $uploadApi->destroy($userData['profile_pic_public_id'], ['resource_type' => 'image']);
+            } catch (Exception $e) {
+            }
         }
 
-        if ($role === 'job_seeker' && !empty($userData['cv_public_id'])) {
-            try { $uploadApi->destroy($userData['cv_public_id'], ['resource_type' => 'raw']); } catch (Exception $e) {}
+        if ($role === 'job_seeker') {
+            // Delete per-application CVs (excluding the default)
+            $appCvQuery = "SELECT DISTINCT resume_public_id FROM applications_table WHERE seeker_id = ? AND resume_public_id IS NOT NULL";
+            $appCvStmt = $dbconnection->prepare($appCvQuery);
+            $appCvStmt->bind_param('i', $user_id);
+            $appCvStmt->execute();
+            $appCvResult = $appCvStmt->get_result();
+            while ($row = $appCvResult->fetch_assoc()) {
+                if ($row['resume_public_id'] !== $userData['cv_public_id']) {  // Avoid deleting default twice
+                    try {
+                        $uploadApi->destroy($row['resume_public_id'], ['resource_type' => 'raw']);
+                    } catch (Exception $e) {
+                    }
+                }
+            }
+            $appCvStmt->close();
+
+            // Delete default CV
+            if (!empty($userData['cv_public_id'])) {
+                try {
+                    $uploadApi->destroy($userData['cv_public_id'], ['resource_type' => 'raw']);
+                } catch (Exception $e) {
+                }
+            }
         }
     }
 
@@ -59,7 +84,8 @@ try {
                 $creds = json_decode($_ENV['FIREBASE_CREDENTIALS'], true);
             } else {
                 $path = dirname(__DIR__, 2) . '/' . ($_ENV['FIREBASE_CREDENTIALS_PATH'] ?? 'config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
-                if (file_exists($path)) $creds = $path;
+                if (file_exists($path))
+                    $creds = $path;
             }
 
             if (isset($creds)) {
