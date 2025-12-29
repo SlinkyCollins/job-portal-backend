@@ -10,7 +10,7 @@ $user_id = $user['user_id'];
 
 $response = [];
 
-$query = "SELECT user_id, firstname, lastname, email, role FROM users_table WHERE user_id = ?";
+$query = "SELECT user_id, firstname, lastname, email, role, suspended FROM users_table WHERE user_id = ?";
 $stmt = $dbconnection->prepare($query);
 $stmt->bind_param('i', $user_id);
 $execute = $stmt->execute();
@@ -19,6 +19,12 @@ if ($execute) {
     $result = $stmt->get_result();
     if ($result->num_rows > 0) {
         $user_data = $result->fetch_assoc();
+        // Add suspended check here
+        if ($user_data['suspended'] == 1) {
+            http_response_code(403);
+            echo json_encode(['status' => false, 'msg' => 'Your account has been suspended. Please contact support.']);
+            exit;
+        }
         $response = [
             'status' => true,
             'user' => $user_data

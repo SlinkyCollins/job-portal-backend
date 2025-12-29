@@ -75,13 +75,20 @@ try {
     } else {
         $stmt->bind_param('ss', $email, $uid);
     }
-    
+
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
         $userId = $user['user_id'];
+
+        // Add suspended check here
+        if ($user['suspended'] == 1) {
+            http_response_code(403);
+            echo json_encode(['status' => false, 'msg' => 'Your account has been suspended. Please contact support.']);
+            exit;
+        }
 
         // --- AUTO-LINKING LOGIC ---
         // If we found them by Email, but the Social ID column is empty, fill it now.
@@ -114,7 +121,7 @@ try {
         if ($providerName && !in_array($providerName, $currentProviders)) {
             $currentProviders[] = $providerName;
             $newProvidersJson = json_encode($currentProviders);
-            
+
             $updateProv = $dbconnection->prepare("UPDATE users_table SET linked_providers = ? WHERE user_id = ?");
             $updateProv->bind_param('si', $newProvidersJson, $userId);
             $updateProv->execute();
@@ -130,7 +137,7 @@ try {
             'iat' => time()
         ];
         $jwt = JWT::encode($payload, $key, 'HS256');
-        
+
         echo json_encode([
             'status' => true,
             'msg' => 'Login successful',

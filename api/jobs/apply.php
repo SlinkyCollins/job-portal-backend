@@ -18,6 +18,21 @@ if (!$job_id) {
     exit;
 }
 
+// Check if job is active and not expired
+$jobCheckQuery = "SELECT status, deadline FROM jobs_table WHERE job_id = ?";
+$jobCheckStmt = $dbconnection->prepare($jobCheckQuery);
+$jobCheckStmt->bind_param('i', $job_id);
+$jobCheckStmt->execute();
+$jobCheckResult = $jobCheckStmt->get_result();
+$job = $jobCheckResult->fetch_assoc();
+$jobCheckStmt->close();
+
+if (!$job || $job['status'] !== 'active' || strtotime($job['deadline']) <= time()) {
+    http_response_code(400);
+    echo json_encode(['status' => false, 'msg' => 'This job is closed or expired and no longer accepting applications.']);
+    exit;
+}
+
 // Prevent duplicate applications
 $checkQuery = "SELECT application_id FROM applications_table WHERE job_id = ? AND seeker_id = ?";
 $checkStmt = $dbconnection->prepare($checkQuery);
