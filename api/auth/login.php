@@ -6,7 +6,7 @@ use Firebase\JWT\JWT;
 
 
 if (file_exists(dirname(__DIR__) . '/../.env')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__ ) . '/..');
+    $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__) . '/..');
     $dotenv->load();
 }
 
@@ -42,6 +42,11 @@ if ($execute) {
         $verifypassword = password_verify($userpassword, $hashedpassword);
 
         if ($verifypassword) {
+            if ($user['suspended'] == 1) {
+                http_response_code(403);
+                echo json_encode(['status' => false, 'msg' => 'Your account has been suspended. Please contact support.']);
+                exit;
+            }
             $payload = [
                 'user_id' => $user['user_id'],
                 'role' => $user['role'],

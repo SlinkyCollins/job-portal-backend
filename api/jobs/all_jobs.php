@@ -3,6 +3,10 @@ require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 
+// Update expired jobs to 'closed' on-the-fly
+$updateQuery = "UPDATE jobs_table SET status = 'closed' WHERE status = 'active' AND (deadline < NOW() OR deadline IS NULL)";
+$dbconnection->query($updateQuery);
+
 use Firebase\JWT\JWT;
 
 if (file_exists(dirname(__DIR__) . '/../.env')) {

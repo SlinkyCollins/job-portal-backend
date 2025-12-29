@@ -16,6 +16,7 @@ $query = "SELECT
             u.email, 
             u.role, 
             u.createdat,
+            u.suspended,
             (SELECT COUNT(*) FROM jobs_table WHERE employer_id = u.user_id) as job_count
           FROM users_table u 
           WHERE u.user_id != ? 

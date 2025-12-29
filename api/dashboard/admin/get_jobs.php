@@ -12,6 +12,7 @@ $query = "SELECT
             j.title as job_title, 
             j.employment_type as job_type, 
             j.location,
+            j.status,
             j.published_at as created_at, 
             c.name as company_name,
             u.firstname,

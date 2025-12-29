@@ -16,6 +16,7 @@ $query = "SELECT
             u.lastname, 
             u.email, 
             u.role,
+            u.suspended,
             e.company_id 
           FROM users_table u
           LEFT JOIN employers_table e ON u.user_id = e.user_id
@@ -29,7 +30,14 @@ if ($execute) {
     $result = $stmt->get_result();
     if ($result->num_rows > 0) {
         $user_data = $result->fetch_assoc();
-        
+
+        // Add suspended check here
+        if ($user_data['suspended'] == 1) {
+            http_response_code(403);
+            echo json_encode(['status' => false, 'msg' => 'Your account has been suspended. Please contact support.']);
+            exit;
+        }
+
         // Ensure company_id is null if not found (just in case)
         if (!isset($user_data['company_id'])) {
             $user_data['company_id'] = null;
