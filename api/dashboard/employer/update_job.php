@@ -20,13 +20,13 @@ try {
                 salary_amount=?, currency=?, salary_duration=?, 
                 experience_level=?, english_fluency=?, overview=?, 
                 description=?, responsibilities=?, requirements=?, 
-                nice_to_have=?, benefits=?, deadline=?, status=?
+                nice_to_have=?, benefits=?, deadline=?
               WHERE job_id=? AND employer_id=?";
 
     $stmt = $dbconnection->prepare($query);
 
-    // sissdssssssssssssii
-    $types = "sissdssssssssssssii";
+    // sissdsssssssssssii
+    $types = "sissdsssssssssssii";
 
     $stmt->bind_param(
         $types,
@@ -46,7 +46,6 @@ try {
         $data->nice_to_have,
         $data->benefits,
         $data->deadline,
-        $data->status,
         $data->job_id,
         $user_id
     );
