@@ -31,9 +31,12 @@ if ($cacheResult->num_rows === count($usedCurrencies)) {
     }
 } else {
     // Fetch from API and cache only used currencies
-    $apiKey = $_ENV['EXCHANGE_RATE_API_KEY'] ?? '';
+    $apiKey = trim($_ENV['EXCHANGE_RATE_API_KEY'] ?? '');  // trim() removes accidental spaces
     $ratesUrl = "https://v6.exchangerate-api.com/v6/{$apiKey}/latest/USD";
-    $ratesResponse = file_get_contents($ratesUrl);
+    
+    // Use @ to suppress warnings from corrupting JSON output
+    $ratesResponse = @file_get_contents($ratesUrl);
+    
     if ($ratesResponse) {
         $ratesData = json_decode($ratesResponse, true);
         if ($ratesData && isset($ratesData['conversion_rates'])) {
@@ -51,6 +54,16 @@ if ($cacheResult->num_rows === count($usedCurrencies)) {
                 }
             }
         }
+    } else {
+        // API failed — fallback to stale cache (ignore expiry)
+        $fallbackQuery = "SELECT currency, rate FROM exchange_rates WHERE currency IN ($placeholders)";
+        $fallbackStmt = $dbconnection->prepare($fallbackQuery);
+        $fallbackStmt->execute($usedCurrencies);
+        $fallbackResult = $fallbackStmt->get_result();
+        while ($row = $fallbackResult->fetch_assoc()) {
+            $rates[$row['currency']] = $row['rate'];
+        }
+        $fallbackStmt->close();
     }
 }
 $cacheStmt->close();
