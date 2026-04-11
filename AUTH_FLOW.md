@@ -144,6 +144,52 @@ This flow applies when a user forgets how they originally signed up and later at
 - The user is logged in successfully.
 - Future logins use the linked provider directly.
 
+## Implementation Summary
+
+This section captures implementation facts that complement the scenario flows above.
+
+### System Responsibilities
+
+| Layer | Responsibility |
+| --- | --- |
+| Frontend (Angular + Firebase) | Handles UI state, popup flows, and Firebase auth sessions |
+| Backend (PHP + MySQL) | Stores user records, validates tokens, issues JWTs, and synchronizes provider links |
+| Firebase | Issues secure provider identities and manages provider credential linking |
+
+**Key principle:** Firebase links identities, while MySQL controls account authority and access. This allows linking without forcing logout/login cycles.
+
+### Key Endpoints and Components
+
+| Component | Purpose |
+| --- | --- |
+| `auth.service.ts` | Runs Google/Facebook sign-in and linking methods, including linking-aware popup behavior |
+| `accountsettings.component.ts` | Chooses `linkWithPopup` when `auth.currentUser` exists, otherwise uses `signInWithPopup` |
+| `social_login.php` | Verifies Firebase token, resolves users by UID/email/provider ID, and performs auto-linking when needed |
+| `link_social.php` | Links additional providers and enforces ownership checks before DB updates |
+| `save_role.php` and `signup.php` | Create initial user records for social and password-based registrations |
+
+### Data Model Notes (`users_table`)
+
+| Field | Purpose |
+| --- | --- |
+| `firebase_uid` | Unique Firebase identity for a single logical user |
+| `google_id` / `facebook_id` | Provider-linked Firebase UIDs used for direct social lookups |
+| `linked_providers` | JSON list of connected providers for account state tracking |
+
+### Sync and Security Rules
+
+1. Always send `social_uid` (Firebase UID) from frontend to backend during linking flows.
+2. Enforce `firebase_uid` uniqueness to prevent one Firebase identity from linking to multiple MySQL users.
+3. During social login, allow email-based auto-linking when provider ID is missing but email matches an existing user.
+4. Reject duplicate or conflicting provider links and return clear user-facing error messages.
+
+### Notable Fixes Applied During Implementation
+
+- Fixed linking failures caused by missing `social_uid` in link requests.
+- Resolved TypeScript typing issues around `linkWithPopup` flow branching.
+- Corrected DB sync behavior to ensure `firebase_uid` is persisted during linking.
+- Completed end-to-end validation across scenarios A, B, and C.
+
 ## Why This Architecture Works
 
 This is a strong authentication design because it separates identity from authority.
