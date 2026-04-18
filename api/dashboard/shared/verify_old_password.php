@@ -2,6 +2,8 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/Validator.php';
+require_once __DIR__ . '/../../../config/password_response.php';
 
 $user = validateJWT(); // Any role
 $user_id = $user['user_id'];
@@ -9,9 +11,16 @@ $user_id = $user['user_id'];
 $data = json_decode(file_get_contents('php://input'));
 $oldPassword = $data->oldPassword ?? '';
 
-if (empty($oldPassword)) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'Old password is required.']);
+$validator = new Validator([
+    'oldPassword' => $oldPassword,
+]);
+$validator->labels([
+    'oldPassword' => 'Current password',
+]);
+$validator->rule('oldPassword', 'required');
+
+if (!$validator->validate()) {
+    passwordResponse(false, 'Validation failed.', 400, $validator->errors());
     exit;
 }
 
@@ -23,9 +32,9 @@ $userData = $result->fetch_assoc();
 $stmt->close();
 
 if (!$userData || !password_verify($oldPassword, $userData['password'])) {
-    echo json_encode(['status' => false, 'message' => 'Old password is incorrect.']);
+    passwordResponse(false, 'Current password is incorrect.', 400);
 } else {
-    echo json_encode(['status' => true, 'message' => 'Old password verified.']);
+    passwordResponse(true, 'Current password verified.');
 }
 
 $dbconnection->close();

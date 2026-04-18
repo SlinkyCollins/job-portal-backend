@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/Validator.php';
+require_once __DIR__ . '/../../../config/password_response.php';
 
 $user = validateJWT('admin');
 $user_id = $user['user_id'];
@@ -15,13 +16,16 @@ $validator = new Validator([
     'current_password' => $current_password,
     'new_password' => $new_password,
 ]);
+$validator->labels([
+    'current_password' => 'Current password',
+    'new_password' => 'New password',
+]);
 
 $validator->rule('current_password', 'required');
 $validator->rule('new_password', 'required|min:' . Validator::PASSWORD_MIN_LENGTH);
 
 if (!$validator->validate()) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => $validator->firstError()]);
+    passwordResponse(false, 'Validation failed.', 400, $validator->errors());
     exit;
 }
 
@@ -34,8 +38,7 @@ $userData = $res->fetch_assoc();
 $stmt->close();
 
 if (!$userData || !password_verify($current_password, $userData['password'])) {
-        http_response_code(403); 
-    echo json_encode(['status' => false, 'message' => 'Current password is incorrect']);
+    passwordResponse(false, 'Current password is incorrect.', 400);
     exit;
 }
 
@@ -46,9 +49,8 @@ $updateStmt = $dbconnection->prepare("UPDATE users_table SET password = ? WHERE 
 $updateStmt->bind_param('si', $hashed, $user_id);
 
 if ($updateStmt->execute()) {
-    echo json_encode(['status' => true, 'message' => 'Password updated successfully']);
+    passwordResponse(true, 'Password updated successfully.');
 } else {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'message' => 'Update failed']);
+    passwordResponse(false, 'Failed to update password.', 500);
 }
 ?>

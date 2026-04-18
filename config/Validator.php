@@ -8,6 +8,7 @@ class Validator
     private array $rules = [];
     private array $errors = [];
     private array $afterCallbacks = [];
+    private array $labels = [];
 
     public function __construct($data = [])
     {
@@ -28,6 +29,12 @@ class Validator
     public function after(callable $callback): self
     {
         $this->afterCallbacks[] = $callback;
+        return $this;
+    }
+
+    public function labels(array $labels): self
+    {
+        $this->labels = array_merge($this->labels, $labels);
         return $this;
     }
 
@@ -213,6 +220,10 @@ class Validator
 
     private function label(string $field): string
     {
+        if (isset($this->labels[$field])) {
+            return $this->labels[$field];
+        }
+
         $label = preg_replace('/([a-z])([A-Z])/', '$1 $2', $field);
         $label = str_replace('_', ' ', $label);
 
