@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../config/api_response.php';
+require_once __DIR__ . '/../../config/config_helper.php';
 
 // Update expired jobs to 'closed' on-the-fly
 $updateQuery = "UPDATE jobs_table SET status = 'closed' WHERE status = 'active' AND (deadline < NOW() OR deadline IS NULL)";
@@ -15,7 +16,10 @@ if (file_exists(dirname(__DIR__) . '/../.env')) {
     $dotenv->load();
 }
 
-$usedCurrencies = ['USD', 'NGN', 'GBP', 'EUR'];
+$usedCurrencies = appConfig('jobs.supported_currencies', ['USD', 'NGN', 'GBP', 'EUR']);
+if (!is_array($usedCurrencies) || count($usedCurrencies) === 0) {
+    $usedCurrencies = ['USD', 'NGN', 'GBP', 'EUR'];
+}
 $cacheExpiryHours = 72;  // Define cache expiry (e.g., 72 hours)
 
 // Check if rates are cached and recent (only for used currencies)
