@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/cloudinary.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // 1. Validate JWT for EITHER role
 // Passing an array allows both roles to pass validation
@@ -16,13 +17,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     $maxSize = 5 * 1024 * 1024;  // 5MB limit
 
     if (!in_array($file['type'], $allowedTypes)) {
-        http_response_code(400);
-        echo json_encode(['status' => false, 'message' => 'Invalid file type.']);
+        apiResponse(false, 'Invalid file type.', 400);
         exit;
     }
     if ($file['size'] > $maxSize) {
-        http_response_code(400);
-        echo json_encode(['status' => false, 'message' => 'File too large. Max 5MB.']);
+        apiResponse(false, 'File too large. Max 5MB.', 400);
         exit;
     }
 
@@ -73,9 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         $stmt->bind_param('ssi', $photo_url, $public_id, $user_id);
 
         if ($stmt->execute()) {
-            echo json_encode([
-                'status' => true,
-                'msg' => 'Profile photo uploaded successfully',
+            apiResponse(true, 'Profile photo uploaded successfully.', 200, [
                 'photoURL' => $photo_url,
                 'public_id' => $public_id
             ]);
@@ -85,15 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         $stmt->close();
 
     } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode([
-            'status' => false,
-            'message' => 'Upload failed: ' . $e->getMessage()
-        ]);
+        apiResponse(false, 'Upload failed: ' . $e->getMessage(), 500);
     }
 } else {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'No file uploaded.']);
+    apiResponse(false, 'No file uploaded.', 400);
 }
 
 $dbconnection->close();

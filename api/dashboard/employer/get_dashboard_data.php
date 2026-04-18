@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('employer');
 $user_id = $user['user_id'];
@@ -31,14 +32,12 @@ try {
     $stmt->execute();
     $recentJobs = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    echo json_encode([
-        "status" => true, 
-        "stats" => $stats, 
-        "recentJobs" => $recentJobs
+    apiResponse(true, 'Dashboard data retrieved successfully.', 200, [
+        'stats' => $stats,
+        'recentJobs' => $recentJobs
     ]);
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(["status" => false, "message" => $e->getMessage()]);
+    apiResponse(false, 'An error occurred while retrieving dashboard data.', 500);
 }
 ?>

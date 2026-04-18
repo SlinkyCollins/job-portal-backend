@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('employer');
 $user_id = $user['user_id'];
@@ -9,7 +10,7 @@ $user_id = $user['user_id'];
 $data = json_decode(file_get_contents("php://input"));
 
 if (empty($data->job_id)) {
-    echo json_encode(["status" => false, "message" => "Job ID required"]);
+    apiResponse(false, 'Job ID required.', 400);
     exit;
 }
 
@@ -21,14 +22,13 @@ try {
     $stmt->bind_param("ii", $data->job_id, $user_id);
     
     if ($stmt->execute() && $stmt->affected_rows > 0) {
-        echo json_encode(["status" => true, "message" => "Job closed successfully"]);
+        apiResponse(true, 'Job closed successfully.');
     } else {
-        echo json_encode(["status" => false, "message" => "Failed to close job or job not found/owned"]);
+        apiResponse(false, 'Failed to close job or job not found or owned by another employer.', 404);
     }
     
     $stmt->close();
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(["status" => false, "message" => "Error: " . $e->getMessage()]);
+    apiResponse(false, 'An error occurred while closing the job.', 500);
 }
 ?>

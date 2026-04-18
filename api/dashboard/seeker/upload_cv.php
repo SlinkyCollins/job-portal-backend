@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/cloudinary.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
@@ -15,18 +16,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
     // Validate file
     if (!in_array($file['type'], $allowedTypes)) {
-        echo json_encode(['status' => false, 'message' => 'Invalid file type. Only PDF and DOCX allowed.']);
+        apiResponse(false, 'Invalid file type. Only PDF and DOCX allowed.', 400);
         exit;
     }
     if ($file['size'] > $maxSize) {
-        echo json_encode(['status' => false, 'message' => 'File too large. Max 10MB.']);  // Updated to match frontend
+        apiResponse(false, 'File too large. Max 10MB.', 400);
         exit;
     }
 
     // Sanitize filename (basic security)
     $cvfilename = htmlspecialchars(trim($cvfilename), ENT_QUOTES, 'UTF-8');
     if (empty($cvfilename)) {
-        echo json_encode(['status' => false, 'message' => 'Filename is required.']);
+        apiResponse(false, 'Filename is required.', 400);
         exit;
     }
 
@@ -79,21 +80,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
         $update->execute();
         $update->close();
 
-        echo json_encode([
-            'status' => true,
-            'msg' => 'CV uploaded successfully',
+        apiResponse(true, 'CV uploaded successfully.', 200, [
             'url' => $download_url,
             'filename' => $cvfilename,
             'public_id' => $uploadResult['public_id']
         ]);
     } catch (Exception $e) {
-        echo json_encode([
-            'status' => false,
-            'message' => 'Upload failed: ' . $e->getMessage()
-        ]);
+        apiResponse(false, 'Upload failed.', 500);
     }
 } else {
-    echo json_encode(['status' => false, 'message' => 'No file uploaded or invalid request.']);
+    apiResponse(false, 'No file uploaded or invalid request.', 400);
 }
 
 $dbconnection->close();

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/Validator.php';
+require_once __DIR__ . '/../../config/api_response.php';
 
 $data = json_decode(file_get_contents("php://input"));
 $firstname = trim($data->fname ?? '');
@@ -19,6 +20,14 @@ $validator = new Validator([
     'role' => $userRole,
     'terms' => $terms,
 ]);
+$validator->labels([
+    'first_name' => 'First name',
+    'last_name' => 'Last name',
+    'email' => 'Email',
+    'password' => 'Password',
+    'role' => 'Role',
+    'terms' => 'Terms and conditions',
+]);
 
 $validator->rule('first_name', 'required');
 $validator->rule('last_name', 'required');
@@ -28,8 +37,7 @@ $validator->rule('role', 'required|in:job_seeker,employer');
 $validator->rule('terms', 'accepted');
 
 if (!$validator->validate()) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'msg' => $validator->firstError()]);
+    apiResponse(false, 'Validation failed.', 400, [], $validator->errors());
     exit;
 }
 
@@ -41,11 +49,7 @@ try {
     $execute = $stmt->execute();
     $result = $stmt->get_result();
     if (!$execute) {
-        $response = [
-            'status' => false,
-            'msg' => 'Query execution failed or no internet connection available: ' . $stmt->error
-        ];
-        echo json_encode($response);
+        apiResponse(false, 'Unable to validate sign up details.', 500);
         exit;
     }
     if ($result->num_rows > 0) {
@@ -53,14 +57,9 @@ try {
         $isSocialUser = !empty($existingUser['google_id']) || !empty($existingUser['facebook_id']);
 
         if ($isSocialUser) {
-            http_response_code(403);
-            echo json_encode([
-                'status' => false,
-                'msg' => 'This email is already registered via Google/Facebook. Please log in using your social account or contact support to add a password.'
-            ]);
+            apiResponse(false, 'This email is already registered via Google/Facebook. Please log in using your social account or contact support to add a password.', 409);
         } else {
-            http_response_code(403);
-            echo json_encode(['status' => false, 'msg' => 'Email already exists']);
+            apiResponse(false, 'Email already exists.', 409);
         }
         $stmt->close();
         exit;
@@ -76,12 +75,6 @@ try {
     $prepare->bind_param('sssssi', $firstname, $lastname, $email, $hash, $userRole, $terms);
     $execute = $prepare->execute();
     if (!$execute) {
-        http_response_code(500);
-        $response = [
-            'status' => false,
-            'msg' => 'Sign up failed due to an error, please try again'
-        ];
-        echo json_encode($response);
         throw new Exception('User insert failed: ' . $prepare->error);
     }
     $newUserId = $dbconnection->insert_id;
@@ -107,13 +100,12 @@ try {
     // Commit transaction
     $dbconnection->commit();
 
-    http_response_code(201);
-    echo json_encode(['status' => true, 'msg' => 'User signed up successfully']);
+    apiResponse(true, 'User signed up successfully.', 201);
 
 } catch (Exception $e) {
     $dbconnection->rollback();
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Sign up failed: ' . $e->getMessage()]);
+    error_log('Sign up failed: ' . $e->getMessage());
+    apiResponse(false, 'Sign up failed. Please try again later.', 500);
 }
 
 $dbconnection->close();

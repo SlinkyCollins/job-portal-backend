@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/middleware.php';
 require_once __DIR__ . '/../../config/cloudinary.php';
+require_once __DIR__ . '/../../config/api_response.php';
 
 // Validate JWT and require job_seeker role
 $user = validateJWT('job_seeker');
@@ -13,8 +14,7 @@ $job_id = $_POST['jobId'] ?? null;
 $cover_letter = $_POST['cover_letter'] ?? null;
 
 if (!$job_id) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'msg' => 'Job ID is required.']);
+    apiResponse(false, 'Job ID is required.', 400);
     exit;
 }
 
@@ -28,8 +28,7 @@ $job = $jobCheckResult->fetch_assoc();
 $jobCheckStmt->close();
 
 if (!$job || $job['status'] !== 'active' || strtotime($job['deadline']) <= time()) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'msg' => 'This job is closed or expired and no longer accepting applications.']);
+    apiResponse(false, 'This job is closed or expired and no longer accepting applications.', 400);
     exit;
 }
 
@@ -41,7 +40,7 @@ $checkStmt->execute();
 $checkStmt->store_result();
 
 if ($checkStmt->num_rows > 0) {
-    echo json_encode(['status' => false, 'msg' => 'You have already applied for this job.', 'hasApplied' => true]);
+    apiResponse(false, 'You have already applied for this job.', 400, ['hasApplied' => true]);
     exit;
 }
 $checkStmt->close();
@@ -58,11 +57,11 @@ if (isset($_FILES['cv_file']) && $_FILES['cv_file']['error'] === UPLOAD_ERR_OK) 
     $maxSize = 10 * 1024 * 1024;  // 10MB
 
     if (!in_array($file['type'], $allowedTypes)) {
-        echo json_encode(['status' => false, 'msg' => 'Invalid CV file type. Only PDF and DOCX allowed.']);
+        apiResponse(false, 'Invalid CV file type. Only PDF and DOCX allowed.', 400);
         exit;
     }
     if ($file['size'] > $maxSize) {
-        echo json_encode(['status' => false, 'msg' => 'CV file too large. Max 10MB.']);
+        apiResponse(false, 'CV file too large. Max 10MB.', 400);
         exit;
     }
 
@@ -85,8 +84,7 @@ if (isset($_FILES['cv_file']) && $_FILES['cv_file']['error'] === UPLOAD_ERR_OK) 
         $resume_filename = htmlspecialchars(basename($file['name']), ENT_QUOTES, 'UTF-8');
         $resume_public_id = $uploadResult['public_id'];
     } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['status' => false, 'msg' => 'CV upload failed: ' . $e->getMessage()]);
+        apiResponse(false, 'CV upload failed: ' . $e->getMessage(), 500);
         exit;
     }
 } else {
@@ -104,7 +102,7 @@ if (isset($_FILES['cv_file']) && $_FILES['cv_file']['error'] === UPLOAD_ERR_OK) 
         $resume_filename = $default['cv_filename'];
         $resume_public_id = $default['cv_public_id'];  // Note: Do NOT delete this on application retraction
     } else {
-        echo json_encode(['status' => false, 'msg' => 'No CV available. Please upload a CV in your dashboard first.']);
+        apiResponse(false, 'No CV available. Please upload a CV in your dashboard first.', 400);
         exit;
     }
 }
@@ -115,12 +113,7 @@ $stmt = $dbconnection->prepare($query);
 $stmt->bind_param('iissss', $job_id, $user_id, $cover_letter, $resume_url, $resume_filename, $resume_public_id);
 
 if ($stmt->execute()) {
-    http_response_code(201);
-    echo json_encode([
-        'status' => true,
-        'msg' => 'Application submitted successfully!',
-        'hasApplied' => true
-    ]);
+    apiResponse(true, 'Application submitted successfully!', 201, ['hasApplied' => true]);
 } else {
     // If insert fails and we uploaded a file, delete it from Cloudinary
     if ($resume_public_id && isset($_FILES['cv_file'])) {
@@ -130,12 +123,7 @@ if ($stmt->execute()) {
             // Log error, but don't block response
         }
     }
-    http_response_code(500);
-    echo json_encode([
-        'status' => false,
-        'msg' => 'Failed to submit application. Please try again later.',
-        'hasApplied' => false
-    ]);
+    apiResponse(false, 'Failed to submit application. Please try again later.', 500);
 }
 
 $stmt->close();

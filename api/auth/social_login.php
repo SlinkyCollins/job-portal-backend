@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/api_response.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Kreait\Firebase\Factory;
@@ -11,8 +12,7 @@ if (file_exists(dirname(__DIR__) . '/../.env')) {
 }
 
 if (empty($_ENV['JWT_SECRET'])) {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Server configuration error']);
+    apiResponse(false, 'Server configuration error.', 500);
     exit;
 }
 
@@ -22,8 +22,7 @@ $token = $data['token'] ?? null;
 $photoURL = $data['photoURL'] ?? '';
 
 if (!$token) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'msg' => 'No token provided']);
+    apiResponse(false, 'No token provided.', 400);
     exit;
 }
 
@@ -33,8 +32,7 @@ if (!empty($_ENV['FIREBASE_CREDENTIALS'])) {
 } else {
     $firebaseCredentialsPath = dirname(__DIR__, 2) . '/' . ($_ENV['FIREBASE_CREDENTIALS_PATH'] ?? 'config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
     if (!file_exists($firebaseCredentialsPath)) {
-        http_response_code(500);
-        echo json_encode(['status' => false, 'msg' => 'Firebase config file missing']);
+        apiResponse(false, 'Firebase config file missing.', 500);
         exit;
     }
     $firebaseCredentials = $firebaseCredentialsPath;
@@ -85,8 +83,7 @@ try {
 
         // Add suspended check here
         if ($user['suspended'] == 1) {
-            http_response_code(403);
-            echo json_encode(['status' => false, 'msg' => 'Your account has been suspended. Please contact support.']);
+            apiResponse(false, 'Your account has been suspended. Please contact support.', 403);
             exit;
         }
 
@@ -138,9 +135,7 @@ try {
         ];
         $jwt = JWT::encode($payload, $key, 'HS256');
 
-        echo json_encode([
-            'status' => true,
-            'msg' => 'Login successful',
+        apiResponse(true, 'Login successful.', 200, [
             'token' => $jwt,
             'user' => [
                 'user_id' => $user['user_id'],
@@ -151,13 +146,15 @@ try {
         exit;
     } else {
         // User not found -> Send to Role Selection (Registration)
-        echo json_encode(['status' => false, 'newUser' => true, 'token' => $token]);
+        apiResponse(false, 'User account not found. Continue registration.', 200, [
+            'newUser' => true,
+            'token' => $token
+        ]);
         exit;
     }
 } catch (Exception $e) {
-    http_response_code(401);
     error_log("Token verification failed: " . $e->getMessage());
-    echo json_encode(['status' => false, 'msg' => 'Invalid token']);
+    apiResponse(false, 'Invalid token.', 401);
     exit;
 }
 ?>

@@ -3,12 +3,11 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // Validate JWT and require job_seeker role
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
-
-$response = [];
 
 $query = "SELECT user_id, firstname, lastname, email, role, suspended FROM users_table WHERE user_id = ?";
 $stmt = $dbconnection->prepare($query);
@@ -21,23 +20,15 @@ if ($execute) {
         $user_data = $result->fetch_assoc();
         // Add suspended check here
         if ($user_data['suspended'] == 1) {
-            http_response_code(403);
-            echo json_encode(['status' => false, 'msg' => 'Your account has been suspended. Please contact support.']);
+            apiResponse(false, 'Your account has been suspended. Please contact support.', 403);
             exit;
         }
-        $response = [
-            'status' => true,
-            'user' => $user_data
-        ];
+        apiResponse(true, 'Seeker dashboard loaded successfully.', 200, ['user' => $user_data]);
     } else {
-        http_response_code(404);
-        $response = ['status' => false, 'msg' => 'No user data found. Please contact support if you believe this is an error.'];
+        apiResponse(false, 'No user data found. Please contact support if you believe this is an error.', 404);
     }
 } else {
-    http_response_code(500);
-    $response = ['status' => false, 'msg' => 'An error occurred while retrieving your data. Please try again later.'];
+    apiResponse(false, 'An error occurred while retrieving your data. Please try again later.', 500);
 }
-
-echo json_encode($response);
 $dbconnection->close();
 ?>

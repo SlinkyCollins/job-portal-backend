@@ -1,14 +1,14 @@
 <?php
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/api_response.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 use Firebase\JWT\JWT;
 
 $jobId = isset($_GET['id']) ? intval($_GET['id']) : null;
 
 if (!$jobId) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'msg' => 'Job ID is required']);
+    apiResponse(false, 'Job ID is required.', 400);
     exit();
 }
 
@@ -19,8 +19,7 @@ if (file_exists(dirname(__DIR__) . '/.env')) {
 
 if (empty($_ENV['JWT_SECRET'])) {
     error_log('Missing JWT_SECRET in .env');
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Server configuration error']);
+    apiResponse(false, 'Server configuration error', 500);
     exit;
 }
 
@@ -61,8 +60,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if (!$result || $result->num_rows === 0) {
-    http_response_code(404);
-    echo json_encode(['status' => false, 'msg' => 'Job not found']);
+    apiResponse(false, 'Job not found', 404);
     exit();
 }
 
@@ -102,7 +100,7 @@ if ($user_id && $role === 'job_seeker') {
     $checkStmt->close();
 }
 
-echo json_encode(['status' => true, 'job' => $job]);
+apiResponse(true, 'Job details retrieved successfully.', 200, ['job' => $job]);
 
 $stmt->close();
 $dbconnection->close();

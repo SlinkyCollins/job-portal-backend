@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
@@ -44,18 +45,16 @@ try {
     $saved = $stmt->get_result()->fetch_assoc()['count'];
     $stmt->close();
 
-    echo json_encode([
-        "status" => true,
-        "data" => [
-            "applied" => $applied,
-            "shortlisted_apps" => $shortlisted_apps,
-            "accepted" => $accepted,
-            "saved_jobs" => $saved
+    apiResponse(true, 'Seeker stats retrieved successfully.', 200, [
+        'data' => [
+            'applied' => $applied,
+            'shortlisted_apps' => $shortlisted_apps,
+            'accepted' => $accepted,
+            'saved_jobs' => $saved
         ]
     ]);
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(["status" => false, "message" => $e->getMessage()]);
+    apiResponse(false, 'An error occurred while retrieving seeker stats.', 500);
 }
 ?>

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/cloudinary.php';
 require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 use Kreait\Firebase\Factory;
 
@@ -16,8 +17,7 @@ $input = json_decode(file_get_contents('php://input'));
 $confirmation = $input->confirmation ?? '';
 
 if ($confirmation !== 'DELETE') {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'Invalid confirmation text']);
+    apiResponse(false, 'Invalid confirmation text', 400);
     exit;
 }
 
@@ -115,11 +115,10 @@ try {
     }
 
     $dbconnection->commit();
-    echo json_encode(['status' => true, 'message' => 'Account deleted successfully']);
+    apiResponse(true, 'Account deleted successfully', 200);
 
 } catch (Exception $e) {
     $dbconnection->rollback();
-    http_response_code(500);
-    echo json_encode(['status' => false, 'message' => 'Delete failed: ' . $e->getMessage()]);
+    apiResponse(false, 'Delete failed: ' . $e->getMessage(), 500);
 }
 ?>

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT(); // Works for ANY role
 $user_id = $user['user_id'];
@@ -17,23 +18,18 @@ try {
         // Check if password column is not empty/null
         $hasPassword = !empty($row['password']);
 
-        echo json_encode([
-            "status" => true,
-            "data" => [
-                "firstname" => $row['firstname'],
-                "lastname" => $row['lastname'],
-                "email" => $row['email'],
-                "created_at" => $row['createdat'],
-                "linked_providers" => $row['linked_providers'], // Frontend will parse JSON
-                "has_password" => $hasPassword 
-            ]
+        apiResponse(true, 'Settings retrieved successfully', 200, [
+            "firstname" => $row['firstname'],
+            "lastname" => $row['lastname'],
+            "email" => $row['email'],
+            "created_at" => $row['createdat'],
+            "linked_providers" => json_decode($row['linked_providers'], true), // Decode JSON for frontend
+            "has_password" => $hasPassword 
         ]);
     } else {
-        http_response_code(404);
-        echo json_encode(["status" => false, "message" => "User not found"]);
+        apiResponse(false, "User not found", 404);
     }
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(["status" => false, "message" => $e->getMessage()]);
+    apiResponse(false, $e->getMessage(), 500);
 }
 ?>

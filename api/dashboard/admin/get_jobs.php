@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // 1. Security Check (Middleware handles the 403 if not admin)
 $user = validateJWT('admin');
@@ -43,5 +44,5 @@ while ($row = $result->fetch_assoc()) {
     $jobs[] = $row;
 }
 
-echo json_encode(['status' => true, 'data' => $jobs]);
+apiResponse(true, 'Jobs retrieved successfully.', 200, ['data' => $jobs]);
 ?>

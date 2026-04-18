@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/Validator.php';
+require_once __DIR__ . '/../../config/api_response.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 use Firebase\JWT\JWT;
 
@@ -13,8 +14,7 @@ if (file_exists(dirname(__DIR__) . '/../.env')) {
 
 if (empty($_ENV['JWT_SECRET'])) {
     error_log('Missing JWT_SECRET in .env');
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Server configuration error']);
+    apiResponse(false, 'Server configuration error.', 500);
     exit;
 }
 
@@ -28,13 +28,16 @@ $validator = new Validator([
     'email' => $useremail,
     'password' => $userpassword,
 ]);
+$validator->labels([
+    'email' => 'Email',
+    'password' => 'Password',
+]);
 
 $validator->rule('email', 'required|email');
 $validator->rule('password', 'required');
 
 if (!$validator->validate()) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'msg' => $validator->firstError()]);
+    apiResponse(false, 'Validation failed.', 400, [], $validator->errors());
     exit;
 }
 
@@ -52,8 +55,7 @@ if ($execute) {
 
         if ($verifypassword) {
             if ($user['suspended'] == 1) {
-                http_response_code(403);
-                echo json_encode(['status' => false, 'msg' => 'Your account has been suspended. Please contact support.']);
+                apiResponse(false, 'Your account has been suspended. Please contact support.', 403);
                 exit;
             }
             $payload = [
@@ -64,9 +66,7 @@ if ($execute) {
                 'iat' => time()
             ];
             $jwt = JWT::encode($payload, $key, 'HS256');
-            echo json_encode([
-                'status' => true,
-                'msg' => 'Login successful',
+            apiResponse(true, 'Login successful.', 200, [
                 'token' => $jwt,
                 'user' => [
                     'user_id' => $user['user_id'],
@@ -76,17 +76,14 @@ if ($execute) {
             ]);
             exit;
         } else {
-            http_response_code(401);
-            echo json_encode(['status' => false, 'msg' => 'Incorrect password']);
+            apiResponse(false, 'Incorrect password.', 401);
             exit;
         }
     } else {
-        http_response_code(404);
-        echo json_encode(['status' => false, 'msg' => 'User not found, please try signing up']);
+        apiResponse(false, 'User not found. Please try signing up.', 404);
         exit;
     }
 } else {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Login failed, please try again later']);
+    apiResponse(false, 'Login failed. Please try again later.', 500);
     exit;
 }

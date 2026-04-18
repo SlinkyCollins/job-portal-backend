@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // 1. Validate JWT
 $user = validateJWT('employer');
@@ -11,8 +12,7 @@ $user_id = $user['user_id'];
 $data = json_decode(file_get_contents("php://input"));
 
 if (empty($data->job_id)) {
-    http_response_code(400);
-    echo json_encode(["status" => false, "message" => "Job ID is required."]);
+    apiResponse(false, 'Job ID is required.', 400);
     exit;
 }
 
@@ -26,11 +26,10 @@ try {
     
     if ($stmt->execute()) {
         if ($stmt->affected_rows > 0) {
-            echo json_encode(["status" => true, "message" => "Job deleted successfully."]);
+            apiResponse(true, 'Job deleted successfully.');
         } else {
             // Query ran, but nothing deleted (either job doesn't exist or belongs to someone else)
-            http_response_code(404);
-            echo json_encode(["status" => false, "message" => "Job not found or access denied."]);
+            apiResponse(false, 'Job not found or access denied.', 404);
         }
     } else {
         throw new Exception("Delete failed: " . $stmt->error);
@@ -39,8 +38,7 @@ try {
     $stmt->close();
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(["status" => false, "message" => "Error: " . $e->getMessage()]);
+    apiResponse(false, 'An error occurred while deleting the job.', 500);
 }
 
 $dbconnection->close();

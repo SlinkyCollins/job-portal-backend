@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/Validator.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
@@ -55,8 +56,7 @@ if (!$validator->validate()) {
 }
 
 if (!empty($errors)) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'errors' => $errors]);
+    apiResponse(false, 'Validation failed.', 400, [], $errors);
     exit;
 }
 
@@ -73,14 +73,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $updateSeeker->close();
 
     if ($seekerSuccess) {
-        echo json_encode(['status' => true, 'msg' => 'Resume updated successfully.']);
+        apiResponse(true, 'Resume updated successfully.');
     } else {
-        http_response_code(500);
-        echo json_encode(['status' => false, 'msg' => 'Resume update failed.']);
+        apiResponse(false, 'Resume update failed.', 500);
     }
 } else {
-    http_response_code(405);
-    echo json_encode(['status' => false, 'msg' => 'Invalid request method.']);
+    apiResponse(false, 'Invalid request method.', 405);
 }
 
 $dbconnection->close();

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // 1. Validate JWT
 $user = validateJWT('employer');
@@ -94,19 +95,17 @@ try {
     $stmt->close();
 
     // 5. Response with Pagination Metadata
-    echo json_encode([
-        "status" => true,
-        "data" => $jobs,
-        "total" => $total_jobs,  // Filtered total
-        "total_all" => $total_all,  // Total jobs (all statuses)
-        "page" => $page,
-        "per_page" => $per_page,
-        "total_pages" => ceil($total_jobs / $per_page)
+    apiResponse(true, 'Employer jobs retrieved successfully.', 200, [
+        'data' => $jobs,
+        'total' => $total_jobs,
+        'total_all' => $total_all,
+        'page' => $page,
+        'per_page' => $per_page,
+        'total_pages' => ceil($total_jobs / $per_page)
     ]);
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(["status" => false, "message" => "Database error: " . $e->getMessage()]);
+    apiResponse(false, 'Database error while retrieving employer jobs.', 500);
 }
 
 $dbconnection->close();

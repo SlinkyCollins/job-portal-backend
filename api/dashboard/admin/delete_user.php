@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/cloudinary.php';
 require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 use Kreait\Firebase\Factory;
 
@@ -14,8 +15,7 @@ $input = json_decode(file_get_contents('php://input'));
 $target_id = $input->user_id ?? null;
 
 if (!$target_id) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'User ID required']);
+    apiResponse(false, 'User ID required', 400);
     exit;
 }
 
@@ -30,12 +30,12 @@ try {
     $checkStmt->close();
 
     if (!$targetUser) {
-        http_response_code(404);
-        throw new Exception("User not found");
+        apiResponse(false, 'User not found', 404);
+        exit;
     }
 
     if ($targetUser['role'] === 'admin') {
-        http_response_code(403);
+        apiResponse(false, 'Cannot delete other admins', 403);
         throw new Exception("Cannot delete other admins");
     }
 
@@ -134,11 +134,10 @@ try {
     $delStmt->execute();
 
     $dbconnection->commit();
-    echo json_encode(['status' => true, 'message' => 'User and all associated data deleted successfully']);
+    apiResponse(true, 'User and all associated data deleted successfully.');
 
 } catch (Exception $e) {
     $dbconnection->rollback();
-    http_response_code(500);
-    echo json_encode(['status' => false, 'message' => $e->getMessage()]);
+    apiResponse(false, 'An error occurred while deleting the user. Please try again later.', 500);
 }
 ?>

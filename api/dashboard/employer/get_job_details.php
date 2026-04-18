@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('employer');
 $user_id = $user['user_id'];
@@ -9,7 +10,7 @@ $user_id = $user['user_id'];
 $job_id = $_GET['job_id'] ?? null;
 
 if (!$job_id) {
-    echo json_encode(["status" => false, "message" => "Job ID required"]);
+    apiResponse(false, 'Job ID required.', 400);
     exit;
 }
 
@@ -41,10 +42,9 @@ if ($row = $result->fetch_assoc()) {
 
     // Attach tags to job object
     $row['tags'] = $tags;
-    echo json_encode(["status" => true, "data" => $row]);
+    apiResponse(true, 'Job details retrieved successfully.', 200, ['data' => $row]);
     $stmt->close();
 } else {
-    http_response_code(404);
-    echo json_encode(["status" => false, "message" => "Job not found"]);
+    apiResponse(false, 'Job not found.', 404);
 }
 ?>

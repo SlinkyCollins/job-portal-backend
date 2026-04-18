@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/api_response.php';
 
 $query = "SELECT id, name FROM categories ORDER BY name ASC";
 $result = $dbconnection->query($query);
@@ -21,5 +22,5 @@ if ($result && $result->num_rows > 0) {
     ];
 }
 
-echo json_encode($response);
+apiResponse($response['status'], $response['msg'] ?? 'Categories retrieved successfully', 200, $response);
 $dbconnection->close();

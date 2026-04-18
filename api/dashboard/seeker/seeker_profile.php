@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
@@ -37,9 +38,9 @@ if ($result && $result->num_rows > 0) {
     // Pre-fill name
     $profile = $result->fetch_assoc();
     $profile['fullname'] = trim(($profile['firstname'] ?? '') . ' ' . ($profile['lastname'] ?? ''));
-    echo json_encode(['status' => true, 'profile' => $profile]);
+    apiResponse(true, 'Profile retrieved successfully.', 200, ['profile' => $profile]);
 } else {
-    echo json_encode(['status' => false, 'msg' => 'Profile not found.']);
+    apiResponse(false, 'Profile not found.', 404);
 }
 
 $stmt->close();

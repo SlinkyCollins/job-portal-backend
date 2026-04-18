@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 try {
     $query = "SELECT id, name FROM tags ORDER BY name ASC";
@@ -11,10 +12,9 @@ try {
         $tags[] = $row;
     }
 
-    echo json_encode(["status" => true, "data" => $tags]);
+    apiResponse(true, 'Tags retrieved successfully.', 200, ['data' => $tags]);
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(["status" => false, "message" => $e->getMessage()]);
+    apiResponse(false, 'An error occurred while retrieving tags.', 500);
 }
 ?>

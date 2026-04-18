@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/Validator.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
@@ -25,8 +26,7 @@ if ($isPartialUpdate) {
     $partialValidator->rule('linked_providers', 'required|json');
 
     if (!$partialValidator->validate()) {
-        http_response_code(400);
-        echo json_encode(['status' => false, 'msg' => $partialValidator->firstError()]);
+        apiResponse(false, $partialValidator->firstError(), 400);
         exit;
     }
 
@@ -34,10 +34,9 @@ if ($isPartialUpdate) {
     $updateUser = $dbconnection->prepare("UPDATE users_table SET linked_providers = ? WHERE user_id = ?");
     $updateUser->bind_param('si', $linked_providers, $user_id);
     if ($updateUser->execute()) {
-        echo json_encode(['status' => true, 'msg' => 'Linked providers updated successfully.']);
+        apiResponse(true, 'Linked providers updated successfully.', 200);
     } else {
-        http_response_code(500);
-        echo json_encode(['status' => false, 'msg' => 'Failed to update linked providers.']);
+        apiResponse(false, 'Failed to update linked providers.', 500);
     }
     $updateUser->close();
     $dbconnection->close();
@@ -320,8 +319,7 @@ $validator->after(function (Validator $validator) use ($validCountries) {
 });
 
 if (!$validator->validate()) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'errors' => $validator->all()]);
+    apiResponse(false, 'Validation failed.', 400, [], $validator->errors());
     exit;
 }
 
@@ -350,15 +348,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Commit or rollback
     if ($userSuccess && $seekerSuccess) {
         $dbconnection->commit();
-        echo json_encode(['status' => true, 'msg' => 'Profile updated successfully.']);
+        apiResponse(true, 'Profile updated successfully.');
     } else {
         $dbconnection->rollback();
-        http_response_code(500);
-        echo json_encode(['status' => false, 'msg' => 'Profile update failed.']);
+        apiResponse(false, 'Profile update failed.', 500);
     }
 } else {
-    http_response_code(405);
-    echo json_encode(['status' => false, 'msg' => 'Invalid request method.']);
+    apiResponse(false, 'Invalid request method.', 405);
 }
 
 $dbconnection->close();

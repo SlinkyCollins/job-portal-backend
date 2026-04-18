@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../config/api_response.php';
 
 // Update expired jobs to 'closed' on-the-fly
 $updateQuery = "UPDATE jobs_table SET status = 'closed' WHERE status = 'active' AND (deadline < NOW() OR deadline IS NULL)";
@@ -288,7 +289,7 @@ $countStmt->close();
 $stmt = $dbconnection->prepare($sql);
 
 if ($stmt === false) {
-    echo json_encode(['status' => false, 'msg' => 'Prepare failed: ' . $dbconnection->error]);
+    apiResponse(false, 'Prepare failed: ' . $dbconnection->error, 500);
     exit;
 }
 
@@ -341,5 +342,5 @@ if ($result && $result->num_rows > 0) {
     ];
 }
 
-echo json_encode($response);
+apiResponse($response['status'], $response['msg'] ?? 'Jobs retrieved successfully', 200, $response);
 $dbconnection->close();

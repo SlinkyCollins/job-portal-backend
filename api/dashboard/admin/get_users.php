@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('admin');
 $role = $user['role'];
@@ -31,5 +32,5 @@ while ($row = $result->fetch_assoc()) {
     $users[] = $row;
 }
 
-echo json_encode(['status' => true, 'data' => $users]);
+apiResponse(true, 'Users retrieved successfully.', 200, ['data' => $users]);
 ?>

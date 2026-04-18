@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('employer');
 $user_id = $user['user_id'];
@@ -38,10 +39,9 @@ try {
         $applications[] = $row;
     }
 
-    echo json_encode(["status" => true, "data" => $applications]);
+    apiResponse(true, 'Applications retrieved successfully.', 200, ['data' => $applications]);
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(["status" => false, "message" => "Error: " . $e->getMessage()]);
+    apiResponse(false, 'An error occurred while retrieving applications.', 500);
 }
 ?>

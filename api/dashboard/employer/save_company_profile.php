@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/cloudinary.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // 1. Validate JWT (Employer Role)
 $user = validateJWT('employer');
@@ -16,7 +17,7 @@ $description = $_POST['description'] ?? '';
 
 // 3. Basic Validation
 if (empty($name) || empty($location) || empty($description)) {
-    echo json_encode(['status' => false, 'message' => 'Company Name, Location, and Description are required.']);
+    apiResponse(false, 'Company name, location, and description are required.', 400);
     exit;
 }
 
@@ -30,11 +31,11 @@ if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
     $maxSize = 2 * 1024 * 1024; // 2MB
 
     if (!in_array($file['type'], $allowedTypes)) {
-        echo json_encode(['status' => false, 'message' => 'Invalid file type. Only JPG and PNG allowed.']);
+        apiResponse(false, 'Invalid file type. Only JPG and PNG allowed.', 400);
         exit;
     }
     if ($file['size'] > $maxSize) {
-        echo json_encode(['status' => false, 'message' => 'File too large. Max 2MB.']);
+        apiResponse(false, 'File too large. Max 2MB.', 400);
         exit;
     }
 
@@ -68,7 +69,7 @@ if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
         $logo_url = $uploadResult['secure_url'];
         $logo_public_id = $uploadResult['public_id'];
     } catch (Exception $e) {
-        echo json_encode(['status' => false, 'message' => 'Logo upload failed: ' . $e->getMessage()]);
+        apiResponse(false, 'Logo upload failed.', 500);
         exit;
     }
 }
@@ -99,7 +100,7 @@ try {
         }
 
         if ($stmt->execute()) {
-            echo json_encode(['status' => true, 'message' => 'Company profile updated successfully.']);
+            apiResponse(true, 'Company profile updated successfully.');
         } else {
             throw new Exception("Update failed: " . $stmt->error);
         }
@@ -132,7 +133,7 @@ try {
             $linkStmt->close();
 
             $dbconnection->commit();
-            echo json_encode(['status' => true, 'message' => 'Company profile created successfully.']);
+            apiResponse(true, 'Company profile created successfully.');
 
         } catch (Exception $e) {
             $dbconnection->rollback();
@@ -141,7 +142,7 @@ try {
     }
 
 } catch (Exception $e) {
-    echo json_encode(['status' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    apiResponse(false, 'Database error while saving company profile.', 500);
 }
 
 $dbconnection->close();

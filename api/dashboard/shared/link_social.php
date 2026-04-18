@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT();
 $user_id = $user['user_id'];
@@ -11,8 +12,7 @@ $providerId = $data->provider_id ?? '';
 $socialUid = $data->social_uid ?? $user['firebase_uid'] ?? '';  // Use provided or user's existing firebase_uid
 
 if (empty($providerId) || empty($socialUid)) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'Invalid provider data']);
+    apiResponse(false, 'Invalid provider data', 400);
     exit;
 }
 
@@ -27,8 +27,7 @@ if ($providerId === 'google.com') {
     $column = 'facebook_id';
     $shortName = 'facebook';
 } else {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'Unsupported provider']);
+    apiResponse(false, 'Unsupported provider', 400);
     exit;
 }
 
@@ -37,8 +36,7 @@ $checkStmt = $dbconnection->prepare("SELECT user_id FROM users_table WHERE fireb
 $checkStmt->bind_param('si', $socialUid, $user_id);
 $checkStmt->execute();
 if ($checkStmt->get_result()->num_rows > 0) {
-    http_response_code(409);
-    echo json_encode(['status' => false, 'message' => 'This account is already linked to another user.']);
+    apiResponse(false, 'This account is already linked to another user.', 409);
     exit;
 }
 $checkStmt->close();
@@ -62,13 +60,8 @@ $updateStmt = $dbconnection->prepare("UPDATE users_table SET $column = ?, fireba
 $updateStmt->bind_param('sssi', $socialUid, $socialUid, $new_providers_json, $user_id);
 
 if ($updateStmt->execute()) {
-    echo json_encode([
-        'status' => true, 
-        'message' => 'Account linked successfully',
-        'linked_providers' => $current_providers
-    ]);
+    apiResponse(true, 'Account linked successfully', 200, ['linked_providers' => $current_providers]);
 } else {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'message' => 'Database update failed']);
+    apiResponse(false, 'Database update failed', 500);
 }
 ?>

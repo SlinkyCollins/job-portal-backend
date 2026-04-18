@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // 1. Validate JWT (Employer Role)
 $user = validateJWT('employer');
@@ -22,30 +23,23 @@ try {
     if ($result->num_rows > 0) {
         // Company Found
         $company = $result->fetch_assoc();
-        
-        echo json_encode([
-            'status' => true,
+
+        apiResponse(true, 'Company profile retrieved successfully.', 200, [
             'has_company' => true,
             'data' => $company
         ]);
     } else {
         // No Company Found (New Employer)
-        echo json_encode([
-            'status' => true,
+        apiResponse(true, 'No company profile found.', 200, [
             'has_company' => false,
-            'data' => null,
-            'message' => 'No company profile found.'
+            'data' => null
         ]);
     }
     
     $stmt->close();
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode([
-        'status' => false, 
-        'message' => 'Database error: ' . $e->getMessage()
-    ]);
+    apiResponse(false, 'Database error while retrieving company profile.', 500);
 }
 
 $dbconnection->close();

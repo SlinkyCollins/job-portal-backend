@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/cloudinary.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // 1. Validate JWT for EITHER role
 $user = validateJWT(['job_seeker', 'employer']);
@@ -18,8 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($role === 'employer') {
         $table = 'employers_table';
     } else {
-        http_response_code(403);
-        echo json_encode(['status' => false, 'message' => 'Invalid role']);
+        apiResponse(false, 'Invalid role', 403);
         exit;
     }
 
@@ -45,16 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $update->bind_param('i', $user_id);
     
     if ($update->execute()) {
-        echo json_encode(['status' => true, 'msg' => 'Profile photo deleted successfully']);
+        apiResponse(true, 'Profile photo deleted successfully', 200);
     } else {
-        http_response_code(500);
-        echo json_encode(['status' => false, 'message' => 'Database update failed']);
+        apiResponse(false, 'Database update failed', 500);
     }
     $update->close();
 
 } else {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'Invalid request.']);
+    apiResponse(false, 'Invalid request.', 400);
 }
 
 $dbconnection->close();

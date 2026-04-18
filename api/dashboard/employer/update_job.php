@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('employer');
 $user_id = $user['user_id'];
@@ -9,7 +10,7 @@ $user_id = $user['user_id'];
 $data = json_decode(file_get_contents("php://input"));
 
 if (empty($data->job_id) || empty($data->title)) {
-    echo json_encode(["status" => false, "message" => "Missing required fields"]);
+    apiResponse(false, 'Missing required fields.', 400);
     exit;
 }
 
@@ -103,7 +104,7 @@ try {
         }
         // --- END TAGS LOGIC ---
 
-        echo json_encode(["status" => true, "message" => "Job updated successfully"]);
+        apiResponse(true, 'Job updated successfully.');
     } else {
         throw new Exception("Update failed: " . $stmt->error);
     }
@@ -111,7 +112,6 @@ try {
     $stmt->close();
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(["status" => false, "message" => "Error: " . $e->getMessage()]);
+    apiResponse(false, 'An error occurred while updating the job.', 500);
 }
 ?>

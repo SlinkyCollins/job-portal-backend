@@ -2,12 +2,11 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // Validate JWT and require employer role
 $user = validateJWT('employer');
 $user_id = $user['user_id'];
-
-$response = [];
 
 // JOIN users_table with employers_table to get the company_id
 $query = "SELECT 
@@ -33,8 +32,7 @@ if ($execute) {
 
         // Add suspended check here
         if ($user_data['suspended'] == 1) {
-            http_response_code(403);
-            echo json_encode(['status' => false, 'msg' => 'Your account has been suspended. Please contact support.']);
+            apiResponse(false, 'Your account has been suspended. Please contact support.', 403);
             exit;
         }
 
@@ -43,19 +41,12 @@ if ($execute) {
             $user_data['company_id'] = null;
         }
 
-        $response = [
-            'status' => true,
-            'user' => $user_data
-        ];
+        apiResponse(true, 'Employer dashboard loaded successfully.', 200, ['user' => $user_data]);
     } else {
-        http_response_code(404);
-        $response = ['status' => false, 'msg' => 'No user data found.'];
+        apiResponse(false, 'No user data found.', 404);
     }
 } else {
-    http_response_code(500);
-    $response = ['status' => false, 'msg' => 'Database error.'];
+    apiResponse(false, 'Database error.', 500);
 }
-
-echo json_encode($response);
 $dbconnection->close();
 ?>

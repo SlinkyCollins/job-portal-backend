@@ -2,12 +2,11 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // Validate JWT and require job_seeker role
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
-
-$response = [];
 
 // Get recent applications by the user (from applications_table) and limit to 5
 $recentApplications = [];
@@ -44,24 +43,15 @@ if ($execute) {
         while ($row = $res->fetch_assoc()) {
             $recentApplications[] = $row;
         };
-        $response = [
-            'status' => true,
-            'recentApplications' => $recentApplications
-        ];
+        apiResponse(true, 'Recent applications retrieved successfully.', 200, ['recentApplications' => $recentApplications]);
     } else {
-        $response = [
-            'status' => false,
-            'msg' => 'No recent applications found.'
-        ];
+        apiResponse(false, 'No recent applications found.', 200);
     }
 }
 else {
-    http_response_code(500);
-    $response = ['status' => false, 'msg' => 'An error occurred while retrieving recent applications. Please try again later.'];
+    apiResponse(false, 'An error occurred while retrieving recent applications. Please try again later.', 500);
 }
 
 $stmt->close();
-
-echo json_encode($response);
 
 $dbconnection->close();

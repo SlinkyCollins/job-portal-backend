@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // 1. Security: Admin Only
 $user = validateJWT('admin');
@@ -21,10 +22,9 @@ try {
         'applications'=> getCount($dbconnection, "SELECT COUNT(*) FROM applications_table")
     ];
 
-    echo json_encode(['status' => true, 'data' => $stats]);
+    apiResponse(true, 'Stats retrieved successfully', 200, $stats);
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'message' => 'Server Error']);
+    apiResponse(false, 'Server Error', 500);
 }
 ?>

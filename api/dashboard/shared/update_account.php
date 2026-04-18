@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/Validator.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT(); // Works for ANY role
 $user_id = $user['user_id'];
@@ -20,8 +21,7 @@ $validator->rule('firstName', 'required|min:2');
 $validator->rule('lastName', 'required|min:2');
 
 if (!$validator->validate()) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'errors' => $validator->all()]);
+    apiResponse(false, 'Invalid input data.', 400, [], $validator->errors());
     exit;
 }
 
@@ -30,12 +30,18 @@ try {
     $updateUser->bind_param('ssi', $firstname, $lastname, $user_id);
     
     if ($updateUser->execute()) {
-        echo json_encode(['status' => true, 'msg' => 'Account updated successfully.']);
+        apiResponse(true, 'Account updated successfully.', 200, [
+            'firstName' => $firstname,
+            'lastName' => $lastname
+        ]);
     } else {
         throw new Exception("Update failed: " . $updateUser->error);
     }
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Error updating account.', 'error' => $e->getMessage()]);
+    apiResponse(false, 'Error updating account.', 500, [], ['error' => $e->getMessage()]);
+    exit;
+} finally {
+    $updateUser->close();
+    $dbconnection->close();
 }
 ?>

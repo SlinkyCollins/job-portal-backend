@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/Validator.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // 1. Validate JWT (Employer Role)
 $user = validateJWT('employer');
@@ -20,8 +21,7 @@ $stmtCompany->execute();
 $resultCompany = $stmtCompany->get_result();
 
 if ($resultCompany->num_rows === 0) {
-    http_response_code(403);
-    echo json_encode(["status" => false, "message" => "Employer record not found."]);
+    apiResponse(false, 'Employer record not found.', 403);
     exit;
 }
 
@@ -30,8 +30,7 @@ $company_id = $row['company_id'];
 $stmtCompany->close();
 
 if (!$company_id) {
-    http_response_code(403);
-    echo json_encode(["status" => false, "message" => "You must create a Company Profile before posting a job."]);
+    apiResponse(false, 'You must create a Company Profile before posting a job.', 403);
     exit;
 }
 
@@ -87,8 +86,7 @@ $validator->after(function (Validator $validator) {
 });
 
 if (!$validator->validate()) {
-    http_response_code(400);
-    echo json_encode(["status" => false, "message" => $validator->firstError()]);
+    apiResponse(false, 'Validation failed.', 400, [], $validator->errors());
     exit;
 }
 
@@ -190,12 +188,7 @@ try {
         }
         // --- NEW TAGS LOGIC ENDS HERE ---
 
-        http_response_code(201);
-        echo json_encode([
-            "status" => true,
-            "message" => "Job posted successfully!",
-            "job_id" => $new_job_id
-        ]);
+        apiResponse(true, 'Job posted successfully.', 201, ['job_id' => $new_job_id]);
     } else {
         throw new Exception("Execute failed: " . $stmt->error);
     }
@@ -203,7 +196,6 @@ try {
     $stmt->close();
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(["status" => false, "message" => "An error occurred: " . $e->getMessage()]);
+    apiResponse(false, 'An error occurred while posting the job.', 500);
 }
 ?>

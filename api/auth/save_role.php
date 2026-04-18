@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/api_response.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Kreait\Firebase\Factory;
@@ -14,8 +15,7 @@ if (file_exists(dirname(__DIR__) . '/../.env')) {
 
 if (empty($_ENV['JWT_SECRET'])) {
     error_log('Missing JWT_SECRET in .env');
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Server configuration error']);
+    apiResponse(false, 'Server configuration error.', 500);
     exit;
 }
 
@@ -27,14 +27,12 @@ $photoURL = $data->photoURL ?? '';
 $termsAccepted = $data->termsAccepted ?? false;
 
 if (!$token || !$role || !in_array($role, ['job_seeker', 'employer'])) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'msg' => 'Token and valid role are required']);
+    apiResponse(false, 'Token and valid role are required.', 400);
     exit;
 }
 
 if ($termsAccepted !== true) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'msg' => 'You must accept the Terms and Conditions']);
+    apiResponse(false, 'You must accept the Terms and Conditions.', 400);
     exit;
 }
 
@@ -44,8 +42,7 @@ if (!empty($_ENV['FIREBASE_CREDENTIALS'])) {
 } else {
     $firebaseCredentialsPath = dirname(__DIR__, 2) . '/' . ($_ENV['FIREBASE_CREDENTIALS_PATH'] ?? 'config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json');
     if (!file_exists($firebaseCredentialsPath)) {
-        http_response_code(500);
-        echo json_encode(['status' => false, 'msg' => 'Firebase config file missing']);
+        apiResponse(false, 'Firebase config file missing.', 500);
         exit;
     }
     $firebaseCredentials = $firebaseCredentialsPath;
@@ -67,8 +64,7 @@ try {
     $firstname = $nameParts[0] ?? '';
     $lastname = implode(' ', array_slice($nameParts, 1)) ?? '';
 } catch (Exception $e) {
-    http_response_code(401);
-    echo json_encode(['status' => false, 'msg' => 'Invalid Firebase token']);
+    apiResponse(false, 'Invalid Firebase token.', 401);
     exit;
 }
 
@@ -91,8 +87,7 @@ $checkStmt = $dbconnection->prepare($checkQuery);
 $checkStmt->bind_param('ss', $email, $uid);
 $checkStmt->execute();
 if ($checkStmt->get_result()->num_rows > 0) {
-    http_response_code(409);
-    echo json_encode(['status' => false, 'msg' => 'User already exists']);
+    apiResponse(false, 'User already exists.', 409);
     exit;
 }
 $checkStmt->close();
@@ -117,10 +112,8 @@ if ($stmt->execute()) {
 
     $payload = ['user_id' => $userId, 'role' => $role, 'email' => $email, 'exp' => time() + 10800, 'iat' => time()];
     $jwt = JWT::encode($payload, $key, 'HS256');
-    
-    echo json_encode([
-        'status' => true,
-        'msg' => 'Role saved and logged in',
+
+    apiResponse(true, 'Role saved and login successful.', 200, [
         'token' => $jwt,
         'user' => [
             'user_id' => $userId,
@@ -129,8 +122,7 @@ if ($stmt->execute()) {
         ]
     ]);
 } else {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Database error: Unable to save role']);
+    apiResponse(false, 'Unable to save role.', 500);
 }
 $stmt->close();
 $dbconnection->close();

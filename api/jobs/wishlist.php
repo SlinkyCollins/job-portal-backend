@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../../config/middleware.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/api_response.php';
 
 // Validate JWT and require job_seeker role
 $user = validateJWT('job_seeker');
@@ -10,8 +12,7 @@ $data = json_decode(file_get_contents("php://input"));
 $job_id = $data->jobId ?? null;
 
 if (!$job_id) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'msg' => 'Job ID is required.']);
+    apiResponse(false, 'Job ID is required.', 400);
     exit;
 }
 
@@ -23,7 +24,7 @@ $checkStmt->execute();
 $checkStmt->store_result();
 
 if ($checkStmt->num_rows > 0) {
-    echo json_encode(['status' => false, 'msg' => 'You have already saved this job.', 'isSaved' => true]);
+    apiResponse(false, 'You have already saved this job.', 400);
     exit;
 }
 $checkStmt->close();
@@ -34,19 +35,9 @@ $stmt = $dbconnection->prepare($query);
 $stmt->bind_param('ii', $job_id, $user_id);
 
 if ($stmt->execute()) {
-    http_response_code(200);
-    echo json_encode([
-        'status' => true,
-        'msg' => 'Added to Wishlist!',
-        'isSaved' => true
-    ]);
+    apiResponse(true, 'Added to Wishlist!', 200, ['isSaved' => true]);
 } else {
-    http_response_code(500);
-    echo json_encode([
-        'status' => false,
-        'msg' => 'Failed to save job. Please try again later.',
-        'isSaved' => false
-    ]);
+    apiResponse(false, 'Failed to save job. Please try again later.', 500);
 }
 
 $stmt->close();

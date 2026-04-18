@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 validateJWT('admin');
 
@@ -9,8 +10,7 @@ $input = json_decode(file_get_contents('php://input'));
 $name = $input->name ?? '';
 
 if (empty($name)) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'Category name required']);
+    apiResponse(false, 'Category name required', 400);
     exit;
 }
 
@@ -19,8 +19,7 @@ $check = $dbconnection->prepare("SELECT id FROM categories WHERE name = ?");
 $check->bind_param('s', $name);
 $check->execute();
 if ($check->get_result()->num_rows > 0) {
-    http_response_code(409);
-    echo json_encode(['status' => false, 'message' => 'Category already exists']);
+    apiResponse(false, 'Category already exists', 409);
     exit;
 }
 
@@ -28,9 +27,8 @@ $stmt = $dbconnection->prepare("INSERT INTO categories (name) VALUES (?)");
 $stmt->bind_param('s', $name);
 
 if ($stmt->execute()) {
-    echo json_encode(['status' => true, 'message' => 'Category added successfully']);
+    apiResponse(true, 'Category added successfully', 201);
 } else {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'message' => 'Failed to add category']);
+    apiResponse(false, 'Failed to add category', 500);
 }
 ?>

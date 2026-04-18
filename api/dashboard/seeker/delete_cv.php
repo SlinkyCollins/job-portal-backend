@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/cloudinary.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
@@ -28,18 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $update->execute();
         $update->close();
 
-        echo json_encode([
-            'status' => true,
-            'message' => 'CV deleted successfully'
-        ]);
+        apiResponse(true, 'CV deleted successfully.');
     } catch (Exception $e) {
-        echo json_encode([
-            'status' => false,
-            'message' => 'Delete failed: ' . $e->getMessage()
-        ]);
+        apiResponse(false, 'Delete failed.', 500);
     }
 } else {
-    echo json_encode(['status' => false, 'message' => 'Invalid request method.']);
+    apiResponse(false, 'Invalid request method.', 405);
 }
 
 $dbconnection->close();

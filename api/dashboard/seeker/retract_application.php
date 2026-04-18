@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../config/cloudinary.php'; 
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // Validate JWT and require job_seeker role
 $user = validateJWT('job_seeker');
@@ -12,8 +13,7 @@ $input = json_decode(file_get_contents('php://input'));
 $applicationId = $input->applicationId ?? null;
 
 if (!$applicationId) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'msg' => 'Application ID is required.']);
+    apiResponse(false, 'Application ID is required.', 400);
     exit;
 }
 
@@ -49,22 +49,21 @@ try {
     if ($stmt->execute()) {
         if ($stmt->affected_rows > 0) {
             $dbconnection->commit();
-            echo json_encode(['status' => true, 'msg' => 'Application retracted successfully']);
+            apiResponse(true, 'Application retracted successfully.');
         } else {
             $dbconnection->rollback();
-            echo json_encode(['status' => false, 'msg' => 'Application not found or already retracted']);
+            apiResponse(false, 'Application not found or already retracted.', 404);
         }
     } else {
         $dbconnection->rollback();
-        echo json_encode(['status' => false, 'msg' => 'Failed to retract: ' . $stmt->error]);
+        apiResponse(false, 'Failed to retract application.', 500);
     }
 
     $stmt->close();
 
 } catch (Exception $e) {
     $dbconnection->rollback();
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Retraction failed: ' . $e->getMessage()]);
+    apiResponse(false, 'Retraction failed.', 500);
 }
 
 $dbconnection->close();

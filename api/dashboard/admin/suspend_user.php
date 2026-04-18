@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 validateJWT('admin');
 
@@ -10,8 +11,7 @@ $user_id = $input->user_id ?? null;
 $action = $input->action ?? null;  // 'suspend' or 'unsuspend'
 
 if (!$user_id || !in_array($action, ['suspend', 'unsuspend'])) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'Invalid request']);
+    apiResponse(false, 'Invalid request', 400);
     exit;
 }
 
@@ -21,14 +21,12 @@ $checkRole->bind_param('i', $user_id);
 $checkRole->execute();
 $result = $checkRole->get_result();
 if ($result->num_rows === 0) {
-    http_response_code(404);
-    echo json_encode(['status' => false, 'message' => 'User not found']);
+    apiResponse(false, 'User not found', 404);
     exit;
 }
 $user = $result->fetch_assoc();
 if ($user['role'] === 'admin') {
-    http_response_code(403);
-    echo json_encode(['status' => false, 'message' => 'Cannot suspend other admins']);
+    apiResponse(false, 'Cannot suspend other admins', 403);
     exit;
 }
 
@@ -38,9 +36,8 @@ $stmt->bind_param('ii', $value, $user_id);
 
 if ($stmt->execute()) {
     $message = $action === 'suspend' ? 'suspended' : 'unsuspended';
-    echo json_encode(['status' => true, 'message' => 'User ' . $message . ' successfully']);
+    apiResponse(true, 'User ' . $message . ' successfully', 200);
 } else {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'message' => 'Failed to update user']);
+    apiResponse(false, 'Failed to update user', 500);
 }
 ?>

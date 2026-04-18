@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
 require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // Load JWT secret
 if (file_exists(dirname(__DIR__) . '/../.env')) {
@@ -11,8 +12,7 @@ if (file_exists(dirname(__DIR__) . '/../.env')) {
 }
 $key = $_ENV['JWT_SECRET'] ?? null;
 if (!$key) {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Server config error']);
+    apiResponse(false, 'Server config error.', 500);
     exit;
 }
 
@@ -139,15 +139,13 @@ LIMIT ? OFFSET ?";
 
 $stmt = $dbconnection->prepare($query);
 if (!$stmt) {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'DB prepare error']);
+    apiResponse(false, 'DB prepare error.', 500);
     exit;
 }
 
 $stmt->bind_param("iii", $user_id, $per_page, $offset);
 if (!$stmt->execute()) {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'DB execute error']);
+    apiResponse(false, 'DB execute error.', 500);
     exit;
 }
 
@@ -161,8 +159,7 @@ if ($result && $result->num_rows > 0) {
         $savedJobs[] = $row;
     }
 
-    $response = [
-        'status' => true,
+    $responseData = [
         'savedJobs' => $savedJobs,
         'pagination' => [
             'current_page' => $page,
@@ -172,8 +169,7 @@ if ($result && $result->num_rows > 0) {
         ]
     ];
 } else {
-    $response = [
-        'status' => true, // Still true, just empty result
+    $responseData = [
         'savedJobs' => [],
         'pagination' => [
             'current_page' => $page,
@@ -184,7 +180,7 @@ if ($result && $result->num_rows > 0) {
     ];
 }
 
-echo json_encode($response);
+apiResponse(true, 'Saved jobs retrieved successfully.', 200, $responseData);
 
 $stmt->close();
 $dbconnection->close();

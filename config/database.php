@@ -1,6 +1,7 @@
 <?php
 
 require __DIR__ . '/../vendor/autoload.php';  // Composer's autoloader 
+require_once __DIR__ . '/api_response.php';
 
 // Load .env only if it exists (optional for local dev)
 if (file_exists(__DIR__ . '/../.env')) {
@@ -34,8 +35,7 @@ if ($env === 'production') {
 // --- MYSQLI CONNECTION ---
 $dbconnection = mysqli_init();
 if (!$dbconnection) {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Database init failed']);
+    apiResponse(false, 'Database init failed', 500);
     exit;
 }
 
@@ -48,7 +48,6 @@ if ($useSSL) {
 }
 
 if (!$dbconnection->real_connect($host, $user, $pass, $db, $port, null, $connectFlags)) {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'msg' => 'Database connection failed']);
+    apiResponse(false, 'Database connection failed', 500);
     exit;
 };

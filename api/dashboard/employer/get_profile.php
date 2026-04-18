@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 $user = validateJWT('employer');
 $user_id = $user['user_id'];
@@ -22,9 +23,8 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($row = $result->fetch_assoc()) {
-    echo json_encode(["status" => true, "data" => $row]);
+    apiResponse(true, 'Profile retrieved successfully.', 200, ['data' => $row]);
 } else {
-    http_response_code(404);
-    echo json_encode(["status" => false, "message" => "User not found"]);
+    apiResponse(false, 'User not found.', 404);
 }
 ?>

@@ -2,12 +2,11 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 // Validate JWT and require job_seeker role
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
-
-$response = [];
 
 // Get all applications by the user (from applications_table)
 $allApplications = [];
@@ -43,23 +42,15 @@ if ($execute) {
         while ($row = $res->fetch_assoc()) {
             $allApplications[] = $row;
         };
-        $response = [
-            'status' => true,
-            'applications' => $allApplications
-        ];
+        apiResponse(true, 'Applications retrieved successfully.', 200, ['applications' => $allApplications]);
     } else {
-        $response = [
-            'status' => false,
-            'msg' => 'No applications found.'
-        ];
+        apiResponse(false, 'No applications found.', 200);
     }
 }
 else {
-    http_response_code(500);
-    $response = ['status' => false, 'msg' => 'An error occurred while retrieving applications. Please try again later.'];
+    apiResponse(false, 'An error occurred while retrieving applications. Please try again later.', 500);
 }
 
 $stmt->close();
-echo json_encode($response);
 $dbconnection->close();
 ?>

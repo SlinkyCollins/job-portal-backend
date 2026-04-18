@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 validateJWT('admin');
 
@@ -19,6 +20,6 @@ if ($result) {
     }
 }
 
-echo json_encode(['status' => true, 'data' => $categories]);
+apiResponse(true, 'Categories retrieved successfully.', 200, ['data' => $categories]);
 $dbconnection->close();
 ?>

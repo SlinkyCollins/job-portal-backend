@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/api_response.php';
 
 validateJWT('admin');
 
@@ -10,8 +11,7 @@ $id = $input->id ?? null;
 $name = $input->name ?? '';
 
 if (!$id || empty($name)) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'Category ID and name required']);
+    apiResponse(false, 'Category ID and name required', 400);
     exit;
 }
 
@@ -20,8 +20,7 @@ $check = $dbconnection->prepare("SELECT id FROM categories WHERE name = ? AND id
 $check->bind_param('si', $name, $id);
 $check->execute();
 if ($check->get_result()->num_rows > 0) {
-    http_response_code(409);
-    echo json_encode(['status' => false, 'message' => 'Category name already exists']);
+    apiResponse(false, 'Category name already exists', 409);
     exit;
 }
 
@@ -29,9 +28,8 @@ $stmt = $dbconnection->prepare("UPDATE categories SET name = ? WHERE id = ?");
 $stmt->bind_param('si', $name, $id);
 
 if ($stmt->execute()) {
-    echo json_encode(['status' => true, 'message' => 'Category updated successfully']);
+    apiResponse(true, 'Category updated successfully', 200);
 } else {
-    http_response_code(500);
-    echo json_encode(['status' => false, 'message' => 'Failed to update category']);
+    apiResponse(false, 'Failed to update category', 500);
 }
 ?>
