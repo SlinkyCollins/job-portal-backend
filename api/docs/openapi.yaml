@@ -1,0 +1,526 @@
+openapi: 3.1.0
+info:
+  title: JobNet Backend API
+  version: 0.1.0
+  description: |
+    Initial OpenAPI documentation for core JobNet flows.
+    Includes Auth, Jobs, and Job Seeker profile update endpoints.
+
+servers:
+  - url: /
+    description: Current host
+  - url: https://jobnet.vercel.app
+    description: Production
+
+tags:
+  - name: Auth
+    description: Authentication and session endpoints
+  - name: Jobs
+    description: Public and authenticated job endpoints
+  - name: Seeker Profile
+    description: Job seeker profile management
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ApiResponseBase:
+      type: object
+      properties:
+        status:
+          type: boolean
+        msg:
+          type: string
+      required: [status]
+
+    ValidationErrors:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: string
+
+    LoginRequest:
+      type: object
+      properties:
+        mail:
+          type: string
+          format: email
+          example: seeker@example.com
+        pword:
+          type: string
+          format: password
+          example: StrongPassword123!
+      required: [mail, pword]
+
+    SignupRequest:
+      type: object
+      properties:
+        fname:
+          type: string
+          example: Ada
+        lname:
+          type: string
+          example: Lovelace
+        mail:
+          type: string
+          format: email
+          example: ada@example.com
+        pword:
+          type: string
+          format: password
+          example: StrongPassword123!
+        role:
+          type: string
+          enum: [job_seeker, employer]
+          example: job_seeker
+        terms:
+          oneOf:
+            - type: boolean
+            - type: integer
+          example: true
+      required: [fname, lname, mail, pword, role, terms]
+
+    SocialLoginRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Firebase ID token
+        photoURL:
+          type: string
+          format: uri
+          nullable: true
+      required: [token]
+
+    UserSummary:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        role:
+          type: string
+          example: job_seeker
+        email:
+          type: string
+          format: email
+
+    LoginPayload:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserSummary'
+
+    JobCard:
+      type: object
+      properties:
+        job_id:
+          type: integer
+        title:
+          type: string
+        location:
+          type: string
+        salary_amount:
+          type: number
+        currency:
+          type: string
+          example: USD
+        salary_duration:
+          type: string
+          example: monthly
+        published_at:
+          type: string
+          format: date-time
+        employment_type:
+          type: string
+        experience_level:
+          type: string
+        category_name:
+          type: string
+        company_id:
+          type: integer
+        company_name:
+          type: string
+        company_logo:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        isSaved:
+          type: boolean
+
+    JobsListData:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobCard'
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total_pages:
+          type: integer
+
+    JobDetailsData:
+      type: object
+      properties:
+        job:
+          type: object
+          additionalProperties: true
+          description: Full job payload from jobs and company join
+
+    UpdateSeekerProfileRequest:
+      type: object
+      properties:
+        fullname:
+          type: string
+          example: Jane Doe
+        phone:
+          type: string
+          example: "+14155552671"
+        bio:
+          type: string
+          nullable: true
+        address:
+          type: string
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 code
+          example: US
+        linked_providers:
+          type: string
+          nullable: true
+          description: JSON-encoded array string for account linking
+          example: "[\"google\",\"facebook\"]"
+      required: [fullname, phone, address, country]
+
+    WishlistRequest:
+      type: object
+      properties:
+        jobId:
+          type: integer
+          example: 101
+      required: [jobId]
+
+paths:
+  /api/auth/signup.php:
+    post:
+      tags: [Auth]
+      summary: Register a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: Signup successful
+        '400':
+          description: Validation failed
+        '409':
+          description: Email already exists or social-account collision
+        '500':
+          description: Server error
+
+  /api/auth/login.php:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponseBase'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginPayload'
+        '400':
+          description: Validation failed
+        '401':
+          description: Incorrect password
+        '403':
+          description: Account suspended
+        '404':
+          description: User not found
+        '500':
+          description: Server configuration or login error
+
+  /api/auth/logout.php:
+    post:
+      tags: [Auth]
+      summary: Logout current user client-side session
+      responses:
+        '200':
+          description: Logged out successfully
+
+  /api/auth/social_login.php:
+    post:
+      tags: [Auth]
+      summary: Login with Firebase social token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SocialLoginRequest'
+      responses:
+        '200':
+          description: Login successful or new user continuation response
+        '400':
+          description: No token provided
+        '401':
+          description: Invalid token
+        '403':
+          description: Account suspended
+        '500':
+          description: Server configuration error
+
+  /api/jobs/all_jobs.php:
+    get:
+      tags: [Jobs]
+      summary: List active jobs with filtering and pagination
+      security:
+        - BearerAuth: []
+        - {}
+      parameters:
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: integer
+        - name: keyword
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [datePosted, relevance, salaryLowToHigh, salaryHighToLow]
+            default: datePosted
+        - name: employment_type
+          in: query
+          description: Comma-separated values or repeated query params
+          schema:
+            oneOf:
+              - type: string
+                example: full-time,remote
+              - type: array
+                items:
+                  type: string
+        - name: experience_level
+          in: query
+          description: Comma-separated values or repeated query params
+          schema:
+            oneOf:
+              - type: string
+                example: junior,mid
+              - type: array
+                items:
+                  type: string
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: currency
+          in: query
+          schema:
+            type: string
+            example: USD
+        - name: min_salary
+          in: query
+          schema:
+            type: integer
+        - name: max_salary
+          in: query
+          schema:
+            type: integer
+        - name: salary_duration
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Jobs retrieved or no jobs found
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponseBase'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/JobsListData'
+
+  /api/jobs/jobdetails.php:
+    get:
+      tags: [Jobs]
+      summary: Get full job details by job id
+      security:
+        - BearerAuth: []
+        - {}
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Job details retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponseBase'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/JobDetailsData'
+        '400':
+          description: Job id missing
+        '404':
+          description: Job not found
+
+  /api/jobs/apply.php:
+    post:
+      tags: [Jobs]
+      summary: Submit a job application (requires job seeker JWT)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                jobId:
+                  type: integer
+                cover_letter:
+                  type: string
+                  nullable: true
+                cv_file:
+                  type: string
+                  format: binary
+                  description: Optional PDF or DOCX (max 10MB)
+              required: [jobId]
+      responses:
+        '201':
+          description: Application submitted
+        '400':
+          description: Invalid input, duplicate apply, missing CV, or job closed
+        '401':
+          description: Unauthorized
+        '500':
+          description: Upload or server error
+
+  /api/jobs/wishlist.php:
+    post:
+      tags: [Jobs]
+      summary: Save a job to seeker wishlist
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WishlistRequest'
+      responses:
+        '200':
+          description: Added to wishlist
+        '400':
+          description: Missing jobId or duplicate save
+        '401':
+          description: Unauthorized
+
+  /api/jobs/wishlist_delete.php:
+    delete:
+      tags: [Jobs]
+      summary: Remove a job from seeker wishlist
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WishlistRequest'
+      responses:
+        '200':
+          description: Removed from wishlist
+        '400':
+          description: Missing jobId
+        '401':
+          description: Unauthorized
+
+  /api/dashboard/seeker/update_profile.php:
+    post:
+      tags: [Seeker Profile]
+      summary: Update seeker profile or linked providers
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/UpdateSeekerProfileRequest'
+                - type: object
+                  properties:
+                    linked_providers:
+                      type: string
+                      description: JSON string array for partial linked-account update
+                      example: "[\"google\"]"
+                  required: [linked_providers]
+      responses:
+        '200':
+          description: Profile updated successfully
+        '400':
+          description: Validation failed
+        '401':
+          description: Unauthorized
+        '405':
+          description: Invalid request method
+        '500':
+          description: Server or config error

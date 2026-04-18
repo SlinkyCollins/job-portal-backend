@@ -87,3 +87,16 @@ The backend includes CLI utilities for system management:
 ```bash
 # Create a new super-admin
 php api/auth/create_admin_cli.php <email> <password> <firstname> <lastname>
+```
+
+### 📘 API Documentation (Swagger/OpenAPI)
+
+Interactive API docs are now available from the built-in Swagger UI page:
+
+- Local/XAMPP: `http://localhost/JobPortal/api/docs/`
+- Production: `https://job-portal-backend-rua3.onrender.com/api/docs/`
+
+Spec files:
+
+- UI page: `api/docs/index.php`
+- OpenAPI spec: `api/docs/openapi.yaml`
