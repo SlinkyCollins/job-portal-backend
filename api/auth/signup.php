@@ -23,7 +23,7 @@ $validator = new Validator([
 $validator->rule('first_name', 'required');
 $validator->rule('last_name', 'required');
 $validator->rule('email', 'required|email');
-$validator->rule('password', 'required|min:6');
+$validator->rule('password', 'required|min:' . Validator::PASSWORD_MIN_LENGTH);
 $validator->rule('role', 'required|in:job_seeker,employer');
 $validator->rule('terms', 'accepted');
 

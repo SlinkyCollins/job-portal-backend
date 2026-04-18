@@ -17,7 +17,7 @@ $validator = new Validator([
 ]);
 
 $validator->rule('oldPassword', 'required');
-$validator->rule('newPassword', 'required|min:8');
+$validator->rule('newPassword', 'required|min:' . Validator::PASSWORD_MIN_LENGTH);
 
 if (!$validator->validate()) {
     http_response_code(400);

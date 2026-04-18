@@ -2,6 +2,8 @@
 
 class Validator
 {
+    public const PASSWORD_MIN_LENGTH = 8;
+
     private array $data;
     private array $rules = [];
     private array $errors = [];
