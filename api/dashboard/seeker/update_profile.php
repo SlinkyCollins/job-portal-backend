@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/Validator.php';
 
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
@@ -18,11 +19,14 @@ $linked_providers = $profileData->linked_providers ?? null;
 $isPartialUpdate = $linked_providers !== null && empty($fullname) && empty($phone) && empty($address) && empty($country);
 
 if ($isPartialUpdate) {
-    // Validate linked_providers only
-    json_decode($linked_providers);
-    if (json_last_error() !== JSON_ERROR_NONE) {
+    $partialValidator = new Validator([
+        'linked_providers' => $linked_providers,
+    ]);
+    $partialValidator->rule('linked_providers', 'required|json');
+
+    if (!$partialValidator->validate()) {
         http_response_code(400);
-        echo json_encode(['status' => false, 'msg' => 'Linked providers must be valid JSON.']);
+        echo json_encode(['status' => false, 'msg' => $partialValidator->firstError()]);
         exit;
     }
 
@@ -287,39 +291,37 @@ $validCountries = [
     'ZW'
 ];
 
-$errors = [];
+$validator = new Validator([
+    'fullname' => $fullname,
+    'phone' => $phone,
+    'address' => $address,
+    'country' => $country,
+    'linked_providers' => $linked_providers,
+]);
 
-if (empty($fullname)) {
-    $errors[] = 'Full name is required.';
-}
-if (!preg_match('/\s/', $fullname)) {
-    $errors[] = 'Full name must include a first and last name separated by a space.';
-}
-if (empty($phone)) {
-    $errors[] = 'Phone is required.';
-}
-if (empty($address)) {
-    $errors[] = 'Address is required.';
-}
-if (empty($country)) {
-    $errors[] = 'Country is required.';
-}
-if (!preg_match("/^\+?[0-9]{7,15}$/", $phone)) {
-    $errors[] = 'Invalid phone number format.';
-}
-if (!in_array(strtoupper($country), $validCountries)) {
-    $errors[] = 'Invalid country code.';
-}
-if ($linked_providers !== null) {
-    json_decode($linked_providers);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        $errors[] = 'Linked providers must be valid JSON.';
+$validator->rule('fullname', 'required');
+$validator->rule('phone', 'required|regex:/^\+?[0-9]{7,15}$/');
+$validator->rule('address', 'required');
+$validator->rule('country', 'required');
+$validator->rule('linked_providers', 'nullable|json');
+$validator->after(function (Validator $validator) {
+    $fullnameValue = (string) $validator->value('fullname', '');
+
+    if (!$validator->hasError('fullname') && !preg_match('/\s/', $fullnameValue)) {
+        $validator->addError('fullname', 'Full name must include a first and last name separated by a space.');
     }
-}
+});
+$validator->after(function (Validator $validator) use ($validCountries) {
+    $countryValue = strtoupper((string) $validator->value('country', ''));
 
-if (!empty($errors)) {
+    if (!$validator->hasError('country') && !in_array($countryValue, $validCountries, true)) {
+        $validator->addError('country', 'Invalid country code.');
+    }
+});
+
+if (!$validator->validate()) {
     http_response_code(400);
-    echo json_encode(['status' => false, 'errors' => $errors]);
+    echo json_encode(['status' => false, 'errors' => $validator->all()]);
     exit;
 }
 

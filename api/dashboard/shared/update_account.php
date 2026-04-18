@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/Validator.php';
 
 $user = validateJWT(); // Works for ANY role
 $user_id = $user['user_id'];
@@ -10,15 +11,17 @@ $data = json_decode(file_get_contents('php://input'));
 $firstname = trim($data->firstName ?? '');
 $lastname = trim($data->lastName ?? '');
 
-$errors = [];
+$validator = new Validator([
+    'firstName' => $firstname,
+    'lastName' => $lastname,
+]);
 
-// 1. Validation (Name only)
-if (empty($firstname) || strlen($firstname) < 2) $errors[] = 'First name is required.';
-if (empty($lastname) || strlen($lastname) < 2) $errors[] = 'Last name is required.';
+$validator->rule('firstName', 'required|min:2');
+$validator->rule('lastName', 'required|min:2');
 
-if (!empty($errors)) {
+if (!$validator->validate()) {
     http_response_code(400);
-    echo json_encode(['status' => false, 'errors' => $errors]);
+    echo json_encode(['status' => false, 'errors' => $validator->all()]);
     exit;
 }
 

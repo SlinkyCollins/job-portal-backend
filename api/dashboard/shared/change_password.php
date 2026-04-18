@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/Validator.php';
 
 $user = validateJWT(); // Any role
 $user_id = $user['user_id'];
@@ -10,15 +11,17 @@ $data = json_decode(file_get_contents('php://input'));
 $oldPassword = $data->oldPassword ?? '';
 $newPassword = $data->newPassword ?? '';
 
-$errors = [];
+$validator = new Validator([
+    'oldPassword' => $oldPassword,
+    'newPassword' => $newPassword,
+]);
 
-// Validate inputs
-if (empty($oldPassword)) $errors['oldPassword'] = 'Old password is required.';
-if (empty($newPassword) || strlen($newPassword) < 8) $errors['newPassword'] = 'New password must be at least 8 characters.';
+$validator->rule('oldPassword', 'required');
+$validator->rule('newPassword', 'required|min:8');
 
-if (!empty($errors)) {
+if (!$validator->validate()) {
     http_response_code(400);
-    echo json_encode(['status' => false, 'errors' => $errors]);
+    echo json_encode(['status' => false, 'errors' => $validator->errors()]);
     exit;
 }
 

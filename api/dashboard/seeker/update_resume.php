@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/Validator.php';
 
 $user = validateJWT('job_seeker');
 $user_id = $user['user_id'];
@@ -11,6 +12,14 @@ $overview = $resumeData->overview ?? null;
 $education = $resumeData->education ?? null;
 $resume_skills = $resumeData->resume_skills ?? null;
 $experience = $resumeData->experience ?? null;
+
+$validator = new Validator([
+    'overview' => $overview,
+    'experience' => $experience,
+]);
+
+$validator->rule('overview', 'required|max:500');
+$validator->rule('experience', 'required|max:1000');
 
 $errors = [];
 
@@ -35,23 +44,14 @@ if ($resume_skills !== null) {
 }
 
 // Basic validation
-if (empty($overview)) {
-    $errors['overview'] = 'Overview is required.';
-}
-if ($overview !== null && strlen($overview) > 500) {
-    $errors['overview'] = 'Overview cannot exceed 500 characters.';
-}
 if (is_array($education) && count($education) == 0) {
     $errors['education'] = 'At least one education entry is required.';
 }
 if (is_array($resume_skills) && count($resume_skills) == 0) {
     $errors['resume_skills'] = 'At least one skill is required.';
 }
-if (empty($experience)) {
-    $errors['experience'] = 'Experience is required.';
-}
-if ($experience !== null && strlen($experience) > 1000) {
-    $errors['experience'] = 'Experience cannot exceed 1000 characters.';
+if (!$validator->validate()) {
+    $errors = array_merge($validator->errors(), $errors);
 }
 
 if (!empty($errors)) {

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/Validator.php';
 
 // 1. Validate JWT (Employer Role)
 $user = validateJWT('employer');
@@ -34,23 +35,60 @@ if (!$company_id) {
     exit;
 }
 
-// 4. Validate Required Fields
-if (
-    empty($data->title) ||
-    empty($data->category_id) ||
-    empty($data->employment_type) ||
-    empty($data->location) ||
-    empty($data->description) ||
-    empty($data->salary_amount) ||
-    empty($data->currency) ||
-    empty($data->salary_duration) ||
-    empty($data->experience_level) ||
-    empty($data->overview) ||
-    empty($data->responsibilities) ||
-    empty($data->requirements)
-) {
+$validator = new Validator([
+    'title' => $data->title ?? null,
+    'category_id' => $data->category_id ?? null,
+    'employment_type' => $data->employment_type ?? null,
+    'location' => $data->location ?? null,
+    'description' => $data->description ?? null,
+    'salary_amount' => $data->salary_amount ?? null,
+    'currency' => $data->currency ?? null,
+    'salary_duration' => $data->salary_duration ?? null,
+    'experience_level' => $data->experience_level ?? null,
+    'overview' => $data->overview ?? null,
+    'responsibilities' => $data->responsibilities ?? null,
+    'requirements' => $data->requirements ?? null,
+    'deadline' => $data->deadline ?? null,
+]);
+
+$validator->rule('title', 'required');
+$validator->rule('category_id', 'required');
+$validator->rule('employment_type', 'required');
+$validator->rule('location', 'required');
+$validator->rule('description', 'required');
+$validator->rule('salary_amount', 'required');
+$validator->rule('currency', 'required');
+$validator->rule('salary_duration', 'required');
+$validator->rule('experience_level', 'required');
+$validator->rule('overview', 'required');
+$validator->rule('responsibilities', 'required');
+$validator->rule('requirements', 'required');
+$validator->rule('deadline', 'nullable');
+$validator->after(function (Validator $validator) {
+    $salaryAmount = $validator->value('salary_amount');
+
+    if (
+        !$validator->hasError('salary_amount') &&
+        (!is_numeric($salaryAmount) || (float) $salaryAmount <= 0)
+    ) {
+        $validator->addError('salary_amount', 'Salary amount must be greater than 0.');
+    }
+});
+$validator->after(function (Validator $validator) {
+    $deadline = $validator->value('deadline');
+
+    if ($deadline === null || $deadline === '') {
+        return;
+    }
+
+    if (strtotime((string) $deadline) <= time()) {
+        $validator->addError('deadline', 'Deadline must be a future date.');
+    }
+});
+
+if (!$validator->validate()) {
     http_response_code(400);
-    echo json_encode(["status" => false, "message" => "Please fill in all required fields."]);
+    echo json_encode(["status" => false, "message" => $validator->firstError()]);
     exit;
 }
 
@@ -58,13 +96,6 @@ try {
     // 5. Handle Deadline Logic
     // If provided, use it. If empty, default to 30 days from now.
     $deadline = !empty($data->deadline) ? $data->deadline : date('Y-m-d', strtotime('+30 days'));
-
-    // Add validation: Deadline must be in the future if provided
-    if (!empty($data->deadline) && strtotime($data->deadline) <= time()) {
-        http_response_code(400);
-        echo json_encode(["status" => false, "message" => "Deadline must be a future date."]);
-        exit;
-    }
 
     // 6. Prepare INSERT Query
     $query = "INSERT INTO jobs_table (

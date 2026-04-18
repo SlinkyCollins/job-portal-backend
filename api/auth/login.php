@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/headers.php';
+require_once __DIR__ . '/../../config/Validator.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 use Firebase\JWT\JWT;
 
@@ -20,12 +21,20 @@ if (empty($_ENV['JWT_SECRET'])) {
 $key = $_ENV['JWT_SECRET'];
 
 $data = json_decode(file_get_contents("php://input"));
-$useremail = $data->mail ?? '';
+$useremail = strtolower(trim($data->mail ?? ''));
 $userpassword = $data->pword ?? '';
 
-if (!$useremail || !$userpassword) {
+$validator = new Validator([
+    'email' => $useremail,
+    'password' => $userpassword,
+]);
+
+$validator->rule('email', 'required|email');
+$validator->rule('password', 'required');
+
+if (!$validator->validate()) {
     http_response_code(400);
-    echo json_encode(['status' => false, 'msg' => 'Email and password are required']);
+    echo json_encode(['status' => false, 'msg' => $validator->firstError()]);
     exit;
 }
 

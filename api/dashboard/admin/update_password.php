@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../../config/headers.php';
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/middleware.php';
+require_once __DIR__ . '/../../../config/Validator.php';
 
 $user = validateJWT('admin');
 $user_id = $user['user_id'];
@@ -10,15 +11,17 @@ $input = json_decode(file_get_contents('php://input'));
 $current_password = $input->current_password ?? '';
 $new_password = $input->new_password ?? '';
 
-if (empty($current_password) || empty($new_password)) {
-    http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'All fields are required']);
-    exit;
-}
+$validator = new Validator([
+    'current_password' => $current_password,
+    'new_password' => $new_password,
+]);
 
-if (strlen($new_password) < 6) {
+$validator->rule('current_password', 'required');
+$validator->rule('new_password', 'required|min:6');
+
+if (!$validator->validate()) {
     http_response_code(400);
-    echo json_encode(['status' => false, 'message' => 'New password must be at least 6 chars']);
+    echo json_encode(['status' => false, 'message' => $validator->firstError()]);
     exit;
 }
 

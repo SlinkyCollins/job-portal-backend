@@ -1,26 +1,35 @@
 <?php
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/Validator.php';
 
 $data = json_decode(file_get_contents("php://input"));
-$firstname = $data->fname;
-$lastname = $data->lname;
-$email = strtolower($data->mail);
-$userpassword = $data->pword;
-$userRole = $data->role;
-$terms = $data->terms;
+$firstname = trim($data->fname ?? '');
+$lastname = trim($data->lname ?? '');
+$email = strtolower(trim($data->mail ?? ''));
+$userpassword = $data->pword ?? '';
+$userRole = $data->role ?? '';
+$terms = $data->terms ?? null;
 
-// Basic validation
-if (
-    empty($firstname) || empty($lastname) || empty($email) ||
-    empty($userpassword) || empty($userRole) || !$terms
-) {
-    echo json_encode(['status' => false, 'msg' => 'All fields are required and terms must be accepted.']);
-    exit;
-}
+$validator = new Validator([
+    'first_name' => $firstname,
+    'last_name' => $lastname,
+    'email' => $email,
+    'password' => $userpassword,
+    'role' => $userRole,
+    'terms' => $terms,
+]);
 
-if (strlen($userpassword) < 6) {
-    echo json_encode(['status' => false, 'msg' => 'Password must be at least 6 characters long']);
+$validator->rule('first_name', 'required');
+$validator->rule('last_name', 'required');
+$validator->rule('email', 'required|email');
+$validator->rule('password', 'required|min:6');
+$validator->rule('role', 'required|in:job_seeker,employer');
+$validator->rule('terms', 'accepted');
+
+if (!$validator->validate()) {
+    http_response_code(400);
+    echo json_encode(['status' => false, 'msg' => $validator->firstError()]);
     exit;
 }
 
