@@ -100,3 +100,7 @@ Spec files:
 
 - UI page: `api/docs/index.php`
 - OpenAPI spec: `api/docs/openapi.yaml`
+
+CI validation:
+
+- We added CI-based OpenAPI linting on pull requests and main pushes to prevent invalid API spec changes from being merged.
