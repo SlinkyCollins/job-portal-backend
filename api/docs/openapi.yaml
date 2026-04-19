@@ -5,6 +5,9 @@ info:
   description: |
     Initial OpenAPI documentation for core JobNet flows.
     Includes Auth, Jobs, and Job Seeker profile update endpoints.
+    Response envelope note: The backend always returns status and message.
+    Additional fields are merged at top-level from each endpoint and may use legacy naming/casing
+    (for example firstName vs firstname, recentJobs, or msg in some fallback branches).
 
 servers:
   - url: /
@@ -39,9 +42,9 @@ components:
       properties:
         status:
           type: boolean
-        msg:
+        message:
           type: string
-      required: [status]
+      required: [status, message]
 
     ValidationErrors:
       type: object
@@ -238,14 +241,14 @@ paths:
             application/json:
               example:
                 status: true
-                msg: User signed up successfully.
+                message: User signed up successfully.
         '400':
           description: Validation failed
           content:
             application/json:
               example:
                 status: false
-                msg: Validation failed.
+                message: Validation failed.
                 errors:
                   email:
                     - Email must be a valid email address.
@@ -257,14 +260,14 @@ paths:
             application/json:
               example:
                 status: false
-                msg: Email already exists.
+                message: Email already exists.
         '500':
           description: Server error
           content:
             application/json:
               example:
                 status: false
-                msg: Sign up failed. Please try again later.
+                message: Sign up failed. Please try again later.
 
   /api/auth/login.php:
     post:
@@ -290,20 +293,19 @@ paths:
                         $ref: '#/components/schemas/LoginPayload'
               example:
                 status: true
-                msg: Login successful.
-                data:
-                  token: <JWT_TOKEN>
-                  user:
-                    user_id: 42
-                    role: job_seeker
-                    email: seeker@example.com
+                message: Login successful.
+                token: <JWT_TOKEN>
+                user:
+                  user_id: 42
+                  role: job_seeker
+                  email: seeker@example.com
         '400':
           description: Validation failed
           content:
             application/json:
               example:
                 status: false
-                msg: Validation failed.
+                message: Validation failed.
                 errors:
                   email:
                     - Email is required.
@@ -313,28 +315,28 @@ paths:
             application/json:
               example:
                 status: false
-                msg: Incorrect password.
+                message: Incorrect password.
         '403':
           description: Account suspended
           content:
             application/json:
               example:
                 status: false
-                msg: Your account has been suspended. Please contact support.
+                message: Your account has been suspended. Please contact support.
         '404':
           description: User not found
           content:
             application/json:
               example:
                 status: false
-                msg: User not found. Please try signing up.
+                message: User not found. Please try signing up.
         '500':
           description: Server configuration or login error
           content:
             application/json:
               example:
                 status: false
-                msg: Server configuration error.
+                message: Server configuration error.
 
   /api/auth/logout.php:
     post:
@@ -347,7 +349,7 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Logged out successfully.
+                message: Logged out successfully.
 
   /api/auth/social_login.php:
     post:
@@ -369,49 +371,47 @@ paths:
                   summary: Existing linked user login
                   value:
                     status: true
-                    msg: Login successful.
-                    data:
-                      token: <JWT_TOKEN>
-                      user:
-                        user_id: 57
-                        role: employer
-                        email: founder@example.com
+                    message: Login successful.
+                    token: <JWT_TOKEN>
+                    user:
+                      user_id: 57
+                      role: employer
+                      email: founder@example.com
                 newUserContinuation:
                   summary: New social user continues registration
                   value:
                     status: false
-                    msg: User account not found. Continue registration.
-                    data:
-                      newUser: true
-                      token: <FIREBASE_ID_TOKEN>
+                    message: User account not found. Continue registration.
+                    newUser: true
+                    token: <FIREBASE_ID_TOKEN>
         '400':
           description: No token provided
           content:
             application/json:
               example:
                 status: false
-                msg: No token provided.
+                message: No token provided.
         '401':
           description: Invalid token
           content:
             application/json:
               example:
                 status: false
-                msg: Invalid token.
+                message: Invalid token.
         '403':
           description: Account suspended
           content:
             application/json:
               example:
                 status: false
-                msg: Your account has been suspended. Please contact support.
+                message: Your account has been suspended. Please contact support.
         '500':
           description: Server configuration error
           content:
             application/json:
               example:
                 status: false
-                msg: Server configuration error.
+                message: Server configuration error.
 
   /api/jobs/all_jobs.php:
     get:
@@ -509,36 +509,33 @@ paths:
                   summary: At least one job found
                   value:
                     status: true
-                    msg: Jobs retrieved successfully
-                    data:
-                      jobs:
-                        - job_id: 101
-                          title: Backend PHP Developer
-                          location: Remote
-                          salary_amount: 4000
-                          currency: USD
-                          salary_duration: monthly
-                          published_at: 2026-04-10T10:22:00Z
-                          employment_type: full-time
-                          experience_level: mid
-                          category_name: Engineering
-                          company_id: 8
-                          company_name: Talent Forge
-                          company_logo: https://cdn.example.com/logo.png
-                          tags: [PHP, MySQL, REST]
-                          isSaved: false
-                      total: 1
-                      page: 1
-                      per_page: 10
-                      total_pages: 1
+                    message: Jobs retrieved successfully
+                    jobs:
+                      - job_id: 101
+                        title: Backend PHP Developer
+                        location: Remote
+                        salary_amount: 4000
+                        currency: USD
+                        salary_duration: monthly
+                        published_at: 2026-04-10T10:22:00Z
+                        employment_type: full-time
+                        experience_level: mid
+                        category_name: Engineering
+                        company_id: 8
+                        company_name: Talent Forge
+                        company_logo: https://cdn.example.com/logo.png
+                        tags: [PHP, MySQL, REST]
+                        isSaved: false
+                    total: 1
+                    page: 1
+                    per_page: 10
+                    total_pages: 1
                 noJobs:
                   summary: No jobs matched filters
                   value:
                     status: false
+                    message: No jobs found
                     msg: No jobs found
-                    data:
-                      status: false
-                      msg: No jobs found
 
   /api/jobs/jobdetails.php:
     get:
@@ -567,37 +564,36 @@ paths:
                         $ref: '#/components/schemas/JobDetailsData'
               example:
                 status: true
-                msg: Job details retrieved successfully.
-                data:
-                  job:
-                    job_id: 101
-                    title: Backend PHP Developer
-                    overview: Build and maintain backend APIs.
-                    description: You will own endpoint delivery and integrations.
-                    location: Remote
-                    salary_amount: 4000
-                    currency: USD
-                    salary_duration: monthly
-                    hasApplied: false
-                    isSaved: true
-                    isRetracted: false
-                    is_closed: false
-                    company_name: Talent Forge
-                    website: https://talentforge.example
+                message: Job details retrieved successfully.
+                job:
+                  job_id: 101
+                  title: Backend PHP Developer
+                  overview: Build and maintain backend APIs.
+                  description: You will own endpoint delivery and integrations.
+                  location: Remote
+                  salary_amount: 4000
+                  currency: USD
+                  salary_duration: monthly
+                  hasApplied: false
+                  isSaved: true
+                  isRetracted: false
+                  is_closed: false
+                  company_name: Talent Forge
+                  website: https://talentforge.example
         '400':
           description: Job id missing
           content:
             application/json:
               example:
                 status: false
-                msg: Job ID is required.
+                message: Job ID is required.
         '404':
           description: Job not found
           content:
             application/json:
               example:
                 status: false
-                msg: Job not found
+                message: Job not found
 
   /api/jobs/apply.php:
     post:
@@ -629,9 +625,8 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Application submitted successfully!
-                data:
-                  hasApplied: true
+                message: Application submitted successfully!
+                hasApplied: true
         '400':
           description: Invalid input, duplicate apply, missing CV, or job closed
           content:
@@ -641,33 +636,32 @@ paths:
                   summary: Already applied
                   value:
                     status: false
-                    msg: You have already applied for this job.
-                    data:
-                      hasApplied: true
+                    message: You have already applied for this job.
+                    hasApplied: true
                 jobClosed:
                   summary: Job no longer accepting applications
                   value:
                     status: false
-                    msg: This job is closed or expired and no longer accepting applications.
+                    message: This job is closed or expired and no longer accepting applications.
                 noCv:
                   summary: No uploaded CV available
                   value:
                     status: false
-                    msg: No CV available. Please upload a CV in your dashboard first.
+                    message: No CV available. Please upload a CV in your dashboard first.
         '401':
           description: Unauthorized
           content:
             application/json:
               example:
                 status: false
-                msg: Unauthorized access.
+                message: Unauthorized access.
         '500':
           description: Upload or server error
           content:
             application/json:
               example:
                 status: false
-                msg: Failed to submit application. Please try again later.
+                message: Failed to submit application. Please try again later.
 
   /api/jobs/wishlist.php:
     post:
@@ -688,9 +682,8 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Added to Wishlist!
-                data:
-                  isSaved: true
+                message: Added to Wishlist!
+                isSaved: true
         '400':
           description: Missing jobId or duplicate save
           content:
@@ -700,19 +693,19 @@ paths:
                   summary: jobId omitted
                   value:
                     status: false
-                    msg: Job ID is required.
+                    message: Job ID is required.
                 duplicate:
                   summary: Already saved
                   value:
                     status: false
-                    msg: You have already saved this job.
+                    message: You have already saved this job.
         '401':
           description: Unauthorized
           content:
             application/json:
               example:
                 status: false
-                msg: Unauthorized access.
+                message: Unauthorized access.
 
   /api/jobs/wishlist_delete.php:
     delete:
@@ -733,23 +726,22 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Removed from Wishlist!
-                data:
-                  isSaved: false
+                message: Removed from Wishlist!
+                isSaved: false
         '400':
           description: Missing jobId
           content:
             application/json:
               example:
                 status: false
-                msg: Job ID is required.
+                message: Job ID is required.
         '401':
           description: Unauthorized
           content:
             application/json:
               example:
                 status: false
-                msg: Unauthorized access.
+                message: Unauthorized access.
 
   /api/dashboard/seeker/update_profile.php:
     post:
@@ -781,19 +773,19 @@ paths:
                   summary: Full profile update successful
                   value:
                     status: true
-                    msg: Profile updated successfully.
+                    message: Profile updated successfully.
                 linkedProvidersOnly:
                   summary: Linked providers only update
                   value:
                     status: true
-                    msg: Linked providers updated successfully.
+                    message: Linked providers updated successfully.
         '400':
           description: Validation failed
           content:
             application/json:
               example:
                 status: false
-                msg: Validation failed.
+                message: Validation failed.
                 errors:
                   fullname:
                     - Full name must include a first and last name separated by a space.
@@ -805,14 +797,14 @@ paths:
             application/json:
               example:
                 status: false
-                msg: Unauthorized access.
+                message: Unauthorized access.
         '405':
           description: Invalid request method
           content:
             application/json:
               example:
                 status: false
-                msg: Invalid request method.
+                message: Invalid request method.
         '500':
           description: Server or config error
           content:
@@ -822,12 +814,12 @@ paths:
                   summary: Database update failed
                   value:
                     status: false
-                    msg: Profile update failed.
+                    message: Profile update failed.
                 configMissing:
                   summary: Country config missing
                   value:
                     status: false
-                    msg: Country validation config is missing or invalid.
+                    message: Country validation config is missing or invalid.
 
   /api/dashboard/admin/admin_dashboard.php:
     get:
@@ -842,14 +834,13 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Admin dashboard loaded successfully.
-                data:
-                  user:
-                    user_id: 1
-                    first_name: Super
-                    last_name: Admin
-                    email: admin@example.com
-                    role: admin
+                message: Admin dashboard loaded successfully.
+                user:
+                  user_id: 1
+                  firstname: Super
+                  lastname: Admin
+                  email: admin@example.com
+                  role: admin
         '401':
           description: Unauthorized
         '404':
@@ -868,13 +859,12 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Stats retrieved successfully
-                data:
-                  total_users: 248
-                  job_seekers: 198
-                  employers: 49
-                  total_jobs: 381
-                  applications: 956
+                message: Stats retrieved successfully
+                total_users: 248
+                job_seekers: 198
+                employers: 49
+                total_jobs: 381
+                applications: 956
         '500':
           description: Server error
 
@@ -891,17 +881,16 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Users retrieved successfully.
+                message: Users retrieved successfully.
                 data:
-                  users:
-                    - user_id: 77
-                      first_name: Jane
-                      last_name: Doe
-                      email: jane@example.com
-                      role: employer
-                      created_at: 2026-03-01T09:12:00Z
-                      suspended: 0
-                      job_count: 3
+                  - user_id: 77
+                    firstname: Jane
+                    lastname: Doe
+                    email: jane@example.com
+                    role: employer
+                    createdat: 2026-03-01T09:12:00Z
+                    suspended: 0
+                    job_count: 3
 
   /api/dashboard/admin/get_jobs.php:
     get:
@@ -924,19 +913,18 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Jobs retrieved successfully.
+                message: Jobs retrieved successfully.
                 data:
-                  jobs:
-                    - job_id: 15
-                      job_title: Backend Developer
-                      job_type: full-time
-                      location: Remote
-                      status: active
-                      created_at: 2026-04-11T10:22:00Z
-                      company_name: Talent Forge
-                      first_name: Musa
-                      last_name: Ibrahim
-                      application_count: 14
+                  - job_id: 15
+                    job_title: Backend Developer
+                    job_type: full-time
+                    location: Remote
+                    status: active
+                    created_at: 2026-04-11T10:22:00Z
+                    company_name: Talent Forge
+                    firstname: Musa
+                    lastname: Ibrahim
+                    application_count: 14
 
   /api/dashboard/admin/get_categories.php:
     get:
@@ -951,12 +939,11 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Categories retrieved successfully.
+                message: Categories retrieved successfully.
                 data:
-                  categories:
-                    - id: 1
-                      name: Engineering
-                      job_count: 28
+                  - id: 1
+                    name: Engineering
+                    job_count: 28
 
   /api/dashboard/admin/add_category.php:
     post:
@@ -982,7 +969,7 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Category added successfully
+                message: Category added successfully
         '400':
           description: Missing category name
         '409':
@@ -1015,7 +1002,7 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Category updated successfully
+                message: Category updated successfully
         '400':
           description: Missing fields
         '409':
@@ -1045,7 +1032,7 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Category deleted successfully
+                message: Category deleted successfully
         '400':
           description: Category ID required
 
@@ -1073,14 +1060,14 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Job deleted successfully
+                message: Job deleted successfully
         '400':
           description: Job ID required
           content:
             application/json:
               example:
                 status: false
-                msg: Job ID required
+                message: Job ID required
 
   /api/dashboard/admin/delete_user.php:
     post:
@@ -1106,7 +1093,7 @@ paths:
             application/json:
               example:
                 status: true
-                msg: User and all associated data deleted successfully.
+                message: User and all associated data deleted successfully.
         '403':
           description: Cannot delete admin
         '404':
@@ -1144,32 +1131,32 @@ paths:
                 suspended:
                   value:
                     status: true
-                    msg: User suspended successfully
+                    message: User suspended successfully
                 unsuspended:
                   value:
                     status: true
-                    msg: User unsuspended successfully
+                    message: User unsuspended successfully
         '400':
           description: Invalid request
           content:
             application/json:
               example:
                 status: false
-                msg: Invalid request
+                message: Invalid request
         '403':
           description: Cannot suspend admin
           content:
             application/json:
               example:
                 status: false
-                msg: Cannot suspend other admins
+                message: Cannot suspend other admins
         '404':
           description: User not found
           content:
             application/json:
               example:
                 status: false
-                msg: User not found
+                message: User not found
 
   /api/dashboard/admin/update_job_status.php:
     post:
@@ -1199,14 +1186,14 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Job status updated successfully
+                message: Job status updated successfully
         '400':
           description: Invalid job id or status
           content:
             application/json:
               example:
                 status: false
-                msg: Invalid job ID or status
+                message: Invalid job ID or status
 
   /api/dashboard/admin/update_password.php:
     post:
@@ -1235,7 +1222,7 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Password updated successfully.
+                message: Password updated successfully.
         '400':
           description: Validation failed or wrong current password
           content:
@@ -1244,21 +1231,21 @@ paths:
                 validation:
                   value:
                     status: false
-                    msg: Validation failed.
+                    message: Validation failed.
                     errors:
                       new_password:
                         - New password must be at least 8 characters.
                 wrongCurrent:
                   value:
                     status: false
-                    msg: Current password is incorrect.
+                    message: Current password is incorrect.
         '500':
           description: Password update failure
           content:
             application/json:
               example:
                 status: false
-                msg: Failed to update password.
+                message: Failed to update password.
 
   /api/dashboard/employer/employer_dashboard.php:
     get:
@@ -1273,30 +1260,29 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Employer dashboard loaded successfully.
-                data:
-                  user:
-                    user_id: 24
-                    first_name: Amaka
-                    last_name: Okafor
-                    email: amaka@talentforge.example
-                    role: employer
-                    suspended: 0
-                    company_id: 4
+                message: Employer dashboard loaded successfully.
+                user:
+                  user_id: 24
+                  firstname: Amaka
+                  lastname: Okafor
+                  email: amaka@talentforge.example
+                  role: employer
+                  suspended: 0
+                  company_id: 4
         '403':
           description: Employer suspended
           content:
             application/json:
               example:
                 status: false
-                msg: Your account has been suspended. Please contact support.
+                message: Your account has been suspended. Please contact support.
         '404':
           description: No user data found
           content:
             application/json:
               example:
                 status: false
-                msg: No user data found.
+                message: No user data found.
 
   /api/dashboard/employer/get_dashboard_data.php:
     get:
@@ -1311,21 +1297,20 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Dashboard data retrieved successfully.
-                data:
-                  stats:
-                    total_jobs: 14
-                    active_jobs: 6
-                    total_applications: 89
-                    shortlisted_count: 12
-                  recent_jobs:
-                    - job_id: 31
-                      title: Product Designer
-                      employment_type: contract
-                      location: Lagos
-                      status: active
-                      published_at: 2026-04-14T10:00:00Z
-                      logo_url: https://cdn.example.com/company.png
+                message: Dashboard data retrieved successfully.
+                stats:
+                  total_jobs: 14
+                  active_jobs: 6
+                  total_applications: 89
+                  shortlisted_count: 12
+                recentJobs:
+                  - job_id: 31
+                    title: Product Designer
+                    employment_type: contract
+                    location: Lagos
+                    status: active
+                    published_at: 2026-04-14T10:00:00Z
+                    logo_url: https://cdn.example.com/company.png
         '500':
           description: Server error
 
@@ -1359,31 +1344,30 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Employer jobs retrieved successfully.
+                message: Employer jobs retrieved successfully.
                 data:
-                  jobs:
-                    - job_id: 31
-                      title: Product Designer
-                      employment_type: contract
-                      location: Lagos
-                      salary_amount: 3000
-                      currency: USD
-                      status: active
-                      deadline: 2026-05-20
-                      published_at: 2026-04-14T10:00:00Z
-                      application_count: 11
-                  total: 8
-                  total_all: 14
-                  page: 1
-                  per_page: 10
-                  total_pages: 1
+                  - job_id: 31
+                    title: Product Designer
+                    employment_type: contract
+                    location: Lagos
+                    salary_amount: 3000
+                    currency: USD
+                    status: active
+                    deadline: 2026-05-20
+                    published_at: 2026-04-14T10:00:00Z
+                    application_count: 11
+                total: 8
+                total_all: 14
+                page: 1
+                per_page: 10
+                total_pages: 1
         '500':
           description: Query failure
           content:
             application/json:
               example:
                 status: false
-                msg: Database error while retrieving employer jobs.
+                message: Database error while retrieving employer jobs.
 
   /api/dashboard/employer/get_job_details.php:
     get:
@@ -1404,32 +1388,31 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Job details retrieved successfully.
+                message: Job details retrieved successfully.
                 data:
-                  job:
-                    job_id: 31
-                    title: Product Designer
-                    category_id: 3
-                    employment_type: contract
-                    location: Lagos
-                    salary_amount: 3000
-                    currency: USD
-                    status: active
-                    tags: [Figma, UX]
+                  job_id: 31
+                  title: Product Designer
+                  category_id: 3
+                  employment_type: contract
+                  location: Lagos
+                  salary_amount: 3000
+                  currency: USD
+                  status: active
+                  tags: [Figma, UX]
         '400':
           description: Job ID required
           content:
             application/json:
               example:
                 status: false
-                msg: Job ID required.
+                message: Job ID required.
         '404':
           description: Job not found
           content:
             application/json:
               example:
                 status: false
-                msg: Job not found.
+                message: Job not found.
 
   /api/dashboard/employer/get_applications.php:
     get:
@@ -1444,26 +1427,25 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Applications retrieved successfully.
+                message: Applications retrieved successfully.
                 data:
-                  applications:
-                    - application_id: 88
-                      status: pending
-                      applied_at: 2026-04-16T11:25:00Z
-                      cover_letter: I am a strong fit for this role.
-                      job_title: Product Designer
-                      first_name: John
-                      last_name: Daniel
-                      email: john@example.com
-                      cv_url: https://res.cloudinary.com/demo/raw/upload/cv_123.pdf
-                      profile_pic_url: https://res.cloudinary.com/demo/image/upload/profile_123.jpg
+                  - application_id: 88
+                    status: pending
+                    applied_at: 2026-04-16T11:25:00Z
+                    cover_letter: I am a strong fit for this role.
+                    job_title: Product Designer
+                    firstname: John
+                    lastname: Daniel
+                    email: john@example.com
+                    cv_url: https://res.cloudinary.com/demo/raw/upload/cv_123.pdf
+                    profile_pic_url: https://res.cloudinary.com/demo/image/upload/profile_123.jpg
         '500':
           description: Query failure
           content:
             application/json:
               example:
                 status: false
-                msg: An error occurred while retrieving applications.
+                message: An error occurred while retrieving applications.
 
   /api/dashboard/employer/post_job.php:
     post:
@@ -1517,9 +1499,8 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Job posted successfully.
-                data:
-                  job_id: 223
+                message: Job posted successfully.
+                job_id: 223
         '400':
           description: Validation failure
         '403':
@@ -1568,21 +1549,21 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Job updated successfully.
+                message: Job updated successfully.
         '400':
           description: Missing required fields
           content:
             application/json:
               example:
                 status: false
-                msg: Missing required fields.
+                message: Missing required fields.
         '500':
           description: Update failure
           content:
             application/json:
               example:
                 status: false
-                msg: An error occurred while updating the job.
+                message: An error occurred while updating the job.
 
   /api/dashboard/employer/close_job.php:
     post:
@@ -1607,21 +1588,21 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Job closed successfully.
+                message: Job closed successfully.
         '400':
           description: Job ID required
           content:
             application/json:
               example:
                 status: false
-                msg: Job ID required.
+                message: Job ID required.
         '404':
           description: Job not found or not owned by employer
           content:
             application/json:
               example:
                 status: false
-                msg: Failed to close job or job not found or owned by another employer.
+                message: Failed to close job or job not found or owned by another employer.
 
   /api/dashboard/employer/delete_job.php:
     post:
@@ -1646,28 +1627,28 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Job deleted successfully.
+                message: Job deleted successfully.
         '400':
           description: Job ID is required
           content:
             application/json:
               example:
                 status: false
-                msg: Job ID is required.
+                message: Job ID is required.
         '404':
           description: Job not found or access denied
           content:
             application/json:
               example:
                 status: false
-                msg: Job not found or access denied.
+                message: Job not found or access denied.
         '500':
           description: Server error
           content:
             application/json:
               example:
                 status: false
-                msg: An error occurred while deleting the job.
+                message: An error occurred while deleting the job.
 
   /api/dashboard/employer/update_application_status.php:
     post:
@@ -1695,7 +1676,7 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Status updated successfully.
+                message: Status updated successfully.
         '400':
           description: Invalid request data
           content:
@@ -1704,25 +1685,25 @@ paths:
                 missingFields:
                   value:
                     status: false
-                    msg: Application ID and status are required.
+                    message: Application ID and status are required.
                 invalidStatus:
                   value:
                     status: false
-                    msg: Invalid status.
+                    message: Invalid status.
         '403':
           description: Application not found or access denied
           content:
             application/json:
               example:
                 status: false
-                msg: Update failed. Application not found or access denied.
+                message: Update failed. Application not found or access denied.
         '500':
           description: Server error
           content:
             application/json:
               example:
                 status: false
-                msg: An error occurred while updating application status.
+                message: An error occurred while updating application status.
 
   /api/dashboard/employer/get_tags.php:
     get:
@@ -1735,13 +1716,12 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Tags retrieved successfully.
+                message: Tags retrieved successfully.
                 data:
-                  tags:
-                    - id: 1
-                      name: PHP
-                    - id: 2
-                      name: MySQL
+                  - id: 1
+                    name: PHP
+                  - id: 2
+                    name: MySQL
         '500':
           description: Server error
 
@@ -1758,21 +1738,20 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Profile retrieved successfully.
+                message: Profile retrieved successfully.
                 data:
-                  profile:
-                    first_name: Amaka
-                    last_name: Okafor
-                    email: amaka@talentforge.example
-                    employer_role: Hiring Manager
-                    profile_pic_url: https://cdn.example.com/profile.jpg
+                  firstname: Amaka
+                  lastname: Okafor
+                  email: amaka@talentforge.example
+                  employer_role: Hiring Manager
+                  profile_pic_url: https://cdn.example.com/profile.jpg
         '404':
           description: User not found
           content:
             application/json:
               example:
                 status: false
-                msg: User not found.
+                message: User not found.
 
   /api/dashboard/employer/update_profile.php:
     post:
@@ -1802,21 +1781,21 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Profile updated successfully.
+                message: Profile updated successfully.
         '400':
           description: Name fields required
           content:
             application/json:
               example:
                 status: false
-                msg: Name fields are required.
+                message: Name fields are required.
         '500':
           description: Server error
           content:
             application/json:
               example:
                 status: false
-                msg: An error occurred while updating the profile.
+                message: An error occurred while updating the profile.
 
   /api/dashboard/employer/get_company_profile.php:
     get:
@@ -1833,24 +1812,22 @@ paths:
                 hasCompany:
                   value:
                     status: true
-                    msg: Company profile retrieved successfully.
+                    message: Company profile retrieved successfully.
+                    has_company: true
                     data:
-                      has_company: true
-                      data:
-                        id: 4
-                        name: Talent Forge
-                        logo_url: https://cdn.example.com/logo.png
-                        website: https://talentforge.example
-                        location: Lagos
-                        description: Hiring top-tier engineers.
-                        created_at: 2026-02-10T13:00:00Z
+                      id: 4
+                      name: Talent Forge
+                      logo_url: https://cdn.example.com/logo.png
+                      website: https://talentforge.example
+                      location: Lagos
+                      description: Hiring top-tier engineers.
+                      created_at: 2026-02-10T13:00:00Z
                 noCompany:
                   value:
                     status: true
-                    msg: No company profile found.
-                    data:
-                      has_company: false
-                      data: null
+                    message: No company profile found.
+                    has_company: false
+                    data: null
         '500':
           description: Database error
 
@@ -1890,11 +1867,11 @@ paths:
                 created:
                   value:
                     status: true
-                    msg: Company profile created successfully.
+                    message: Company profile created successfully.
                 updated:
                   value:
                     status: true
-                    msg: Company profile updated successfully.
+                    message: Company profile updated successfully.
         '400':
           description: Validation or file checks failed
           content:
@@ -1903,18 +1880,18 @@ paths:
                 missingRequired:
                   value:
                     status: false
-                    msg: Company name, location, and description are required.
+                    message: Company name, location, and description are required.
                 invalidFile:
                   value:
                     status: false
-                    msg: Invalid file type. Only JPG and PNG allowed.
+                    message: Invalid file type. Only JPG and PNG allowed.
         '500':
           description: Upload or database error
           content:
             application/json:
               example:
                 status: false
-                msg: Database error while saving company profile.
+                message: Database error while saving company profile.
 
   /api/dashboard/shared/user_data.php:
     get:
@@ -1929,21 +1906,20 @@ paths:
             application/json:
               example:
                 status: true
-                msg: User data retrieved successfully.
-                data:
-                  user:
-                    user_id: 24
-                    first_name: Amaka
-                    last_name: Okafor
-                    email: amaka@talentforge.example
-                    role: employer
+                message: User data retrieved successfully.
+                user:
+                  user_id: 24
+                  firstname: Amaka
+                  lastname: Okafor
+                  email: amaka@talentforge.example
+                  role: employer
         '404':
           description: User not found
           content:
             application/json:
               example:
                 status: false
-                msg: User not found
+                message: User not found
 
   /api/dashboard/shared/get_settings.php:
     get:
@@ -1958,28 +1934,27 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Settings retrieved successfully
-                data:
-                  first_name: Amaka
-                  last_name: Okafor
-                  email: amaka@talentforge.example
-                  created_at: 2026-01-09T14:21:00Z
-                  linked_providers: [google]
-                  has_password: true
+                message: Settings retrieved successfully
+                firstname: Amaka
+                lastname: Okafor
+                email: amaka@talentforge.example
+                created_at: 2026-01-09T14:21:00Z
+                linked_providers: [google]
+                has_password: true
         '404':
           description: User not found
           content:
             application/json:
               example:
                 status: false
-                msg: User not found
+                message: User not found
         '500':
           description: Server error
           content:
             application/json:
               example:
                 status: false
-                msg: Database query failed.
+                message: Database query failed.
 
   /api/dashboard/shared/update_account.php:
     post:
@@ -2008,27 +1983,26 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Account updated successfully.
-                data:
-                  first_name: Amaka
-                  last_name: Okafor
+                message: Account updated successfully.
+                firstName: Amaka
+                lastName: Okafor
         '400':
           description: Invalid input data
           content:
             application/json:
               example:
                 status: false
-                msg: Invalid input data.
+                message: Invalid input data.
                 errors:
-                  first_name:
-                    - First name must be at least 2 characters.
+                  firstName:
+                    - firstName must be at least 2 characters.
         '500':
           description: Update failed
           content:
             application/json:
               example:
                 status: false
-                msg: Error updating account.
+                message: Error updating account.
 
   /api/dashboard/shared/verify_old_password.php:
     post:
@@ -2054,7 +2028,7 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Current password verified.
+                message: Current password verified.
         '400':
           description: Validation failed or incorrect password
           content:
@@ -2063,14 +2037,14 @@ paths:
                 validation:
                   value:
                     status: false
-                    msg: Validation failed.
+                    message: Validation failed.
                     errors:
                       oldPassword:
                         - Current password is required.
                 incorrect:
                   value:
                     status: false
-                    msg: Current password is incorrect.
+                    message: Current password is incorrect.
 
   /api/dashboard/shared/change_password.php:
     post:
@@ -2099,7 +2073,7 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Password updated successfully.
+                message: Password updated successfully.
         '400':
           description: Validation failed or incorrect old password
           content:
@@ -2108,21 +2082,21 @@ paths:
                 validation:
                   value:
                     status: false
-                    msg: Validation failed.
+                    message: Validation failed.
                     errors:
                       newPassword:
                         - New password must be at least 8 characters.
                 incorrect:
                   value:
                     status: false
-                    msg: Current password is incorrect.
+                    message: Current password is incorrect.
         '500':
           description: Password update failed
           content:
             application/json:
               example:
                 status: false
-                msg: Failed to update password.
+                message: Failed to update password.
 
   /api/dashboard/shared/link_social.php:
     post:
@@ -2152,9 +2126,8 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Account linked successfully
-                data:
-                  linked_providers: [google, facebook]
+                message: Account linked successfully
+                linked_providers: [google, facebook]
         '400':
           description: Invalid provider data or unsupported provider
           content:
@@ -2163,25 +2136,25 @@ paths:
                 invalidProviderData:
                   value:
                     status: false
-                    msg: Invalid provider data
+                    message: Invalid provider data
                 unsupported:
                   value:
                     status: false
-                    msg: Unsupported provider
+                    message: Unsupported provider
         '409':
           description: Provider already linked elsewhere
           content:
             application/json:
               example:
                 status: false
-                msg: This account is already linked to another user.
+                message: This account is already linked to another user.
         '500':
           description: Database update failed
           content:
             application/json:
               example:
                 status: false
-                msg: Database update failed
+                message: Database update failed
 
   /api/dashboard/shared/upload_profile_photo.php:
     post:
@@ -2207,10 +2180,9 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Profile photo uploaded successfully.
-                data:
-                  photo_url: https://res.cloudinary.com/demo/image/upload/profile_24_1713529000.jpg
-                  public_id: employer_24_1713529000
+                message: Profile photo uploaded successfully.
+                photoURL: https://res.cloudinary.com/demo/image/upload/profile_24_1713529000.jpg
+                public_id: employer_24_1713529000
         '400':
           description: No file or invalid file constraints
           content:
@@ -2219,22 +2191,22 @@ paths:
                 noFile:
                   value:
                     status: false
-                    msg: No file uploaded.
+                    message: No file uploaded.
                 invalidType:
                   value:
                     status: false
-                    msg: Invalid file type.
+                    message: Invalid file type.
                 tooLarge:
                   value:
                     status: false
-                    msg: File too large. Max 5MB.
+                    message: File too large. Max 5MB.
         '500':
           description: Upload failure
           content:
             application/json:
               example:
                 status: false
-                msg: Upload failed. Database update failed.
+                message: Upload failed: Database update failed.
 
   /api/dashboard/shared/delete_profile_photo.php:
     post:
@@ -2249,21 +2221,21 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Profile photo deleted successfully
+                message: Profile photo deleted successfully
         '400':
           description: Invalid request
           content:
             application/json:
               example:
                 status: false
-                msg: Invalid request.
+                message: Invalid request.
         '500':
           description: Database update failed
           content:
             application/json:
               example:
                 status: false
-                msg: Database update failed
+                message: Database update failed
 
   /api/dashboard/shared/delete_account.php:
     post:
@@ -2289,18 +2261,19 @@ paths:
             application/json:
               example:
                 status: true
-                msg: Account deleted successfully
+                message: Account deleted successfully
         '400':
           description: Invalid confirmation text
           content:
             application/json:
               example:
                 status: false
-                msg: Invalid confirmation text
+                message: Invalid confirmation text
         '500':
           description: Delete failed
           content:
             application/json:
               example:
                 status: false
-                msg: Delete failed. User not found or already deleted
+                message: Delete failed: User not found or already deleted
+
