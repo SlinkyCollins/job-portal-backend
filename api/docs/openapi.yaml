@@ -23,6 +23,8 @@ tags:
     description: Admin-only management endpoints
   - name: Employer Dashboard
     description: Employer dashboard and job management endpoints
+  - name: Shared Settings
+    description: Shared account and settings endpoints for authenticated users
 
 components:
   securitySchemes:
@@ -1067,8 +1069,18 @@ paths:
       responses:
         '200':
           description: Job deleted
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Job deleted successfully
         '400':
           description: Job ID required
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Job ID required
 
   /api/dashboard/admin/delete_user.php:
     post:
@@ -1126,12 +1138,38 @@ paths:
       responses:
         '200':
           description: User suspension state updated
+          content:
+            application/json:
+              examples:
+                suspended:
+                  value:
+                    status: true
+                    msg: User suspended successfully
+                unsuspended:
+                  value:
+                    status: true
+                    msg: User unsuspended successfully
         '400':
           description: Invalid request
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Invalid request
         '403':
           description: Cannot suspend admin
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Cannot suspend other admins
         '404':
           description: User not found
+          content:
+            application/json:
+              example:
+                status: false
+                msg: User not found
 
   /api/dashboard/admin/update_job_status.php:
     post:
@@ -1157,8 +1195,18 @@ paths:
       responses:
         '200':
           description: Job status updated
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Job status updated successfully
         '400':
           description: Invalid job id or status
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Invalid job ID or status
 
   /api/dashboard/admin/update_password.php:
     post:
@@ -1190,8 +1238,27 @@ paths:
                 msg: Password updated successfully.
         '400':
           description: Validation failed or wrong current password
+          content:
+            application/json:
+              examples:
+                validation:
+                  value:
+                    status: false
+                    msg: Validation failed.
+                    errors:
+                      new_password:
+                        - New password must be at least 8 characters.
+                wrongCurrent:
+                  value:
+                    status: false
+                    msg: Current password is incorrect.
         '500':
           description: Password update failure
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Failed to update password.
 
   /api/dashboard/employer/employer_dashboard.php:
     get:
@@ -1202,10 +1269,34 @@ paths:
       responses:
         '200':
           description: Dashboard loaded
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Employer dashboard loaded successfully.
+                data:
+                  user:
+                    user_id: 24
+                    firstname: Amaka
+                    lastname: Okafor
+                    email: amaka@talentforge.example
+                    role: employer
+                    suspended: 0
+                    company_id: 4
         '403':
           description: Employer suspended
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Your account has been suspended. Please contact support.
         '404':
           description: No user data found
+          content:
+            application/json:
+              example:
+                status: false
+                msg: No user data found.
 
   /api/dashboard/employer/get_dashboard_data.php:
     get:
@@ -1264,8 +1355,35 @@ paths:
       responses:
         '200':
           description: Employer jobs retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Employer jobs retrieved successfully.
+                data:
+                  data:
+                    - job_id: 31
+                      title: Product Designer
+                      employment_type: contract
+                      location: Lagos
+                      salary_amount: 3000
+                      currency: USD
+                      status: active
+                      deadline: 2026-05-20
+                      published_at: 2026-04-14T10:00:00Z
+                      application_count: 11
+                  total: 8
+                  total_all: 14
+                  page: 1
+                  per_page: 10
+                  total_pages: 1
         '500':
           description: Query failure
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Database error while retrieving employer jobs.
 
   /api/dashboard/employer/get_job_details.php:
     get:
@@ -1282,10 +1400,36 @@ paths:
       responses:
         '200':
           description: Job details retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Job details retrieved successfully.
+                data:
+                  data:
+                    job_id: 31
+                    title: Product Designer
+                    category_id: 3
+                    employment_type: contract
+                    location: Lagos
+                    salary_amount: 3000
+                    currency: USD
+                    status: active
+                    tags: [Figma, UX]
         '400':
           description: Job ID required
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Job ID required.
         '404':
           description: Job not found
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Job not found.
 
   /api/dashboard/employer/get_applications.php:
     get:
@@ -1296,8 +1440,30 @@ paths:
       responses:
         '200':
           description: Applications retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Applications retrieved successfully.
+                data:
+                  data:
+                    - application_id: 88
+                      status: pending
+                      applied_at: 2026-04-16T11:25:00Z
+                      cover_letter: I am a strong fit for this role.
+                      job_title: Product Designer
+                      firstname: John
+                      lastname: Daniel
+                      email: john@example.com
+                      cv_url: https://res.cloudinary.com/demo/raw/upload/cv_123.pdf
+                      profile_pic_url: https://res.cloudinary.com/demo/image/upload/profile_123.jpg
         '500':
           description: Query failure
+          content:
+            application/json:
+              example:
+                status: false
+                msg: An error occurred while retrieving applications.
 
   /api/dashboard/employer/post_job.php:
     post:
@@ -1398,10 +1564,25 @@ paths:
       responses:
         '200':
           description: Job updated
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Job updated successfully.
         '400':
           description: Missing required fields
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Missing required fields.
         '500':
           description: Update failure
+          content:
+            application/json:
+              example:
+                status: false
+                msg: An error occurred while updating the job.
 
   /api/dashboard/employer/close_job.php:
     post:
@@ -1422,10 +1603,25 @@ paths:
       responses:
         '200':
           description: Job closed
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Job closed successfully.
         '400':
           description: Job ID required
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Job ID required.
         '404':
           description: Job not found or not owned by employer
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Failed to close job or job not found or owned by another employer.
 
   /api/dashboard/employer/delete_job.php:
     post:
@@ -1446,12 +1642,32 @@ paths:
       responses:
         '200':
           description: Job deleted
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Job deleted successfully.
         '400':
           description: Job ID is required
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Job ID is required.
         '404':
           description: Job not found or access denied
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Job not found or access denied.
         '500':
           description: Server error
+          content:
+            application/json:
+              example:
+                status: false
+                msg: An error occurred while deleting the job.
 
   /api/dashboard/employer/update_application_status.php:
     post:
@@ -1475,12 +1691,38 @@ paths:
       responses:
         '200':
           description: Status updated
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Status updated successfully.
         '400':
           description: Invalid request data
+          content:
+            application/json:
+              examples:
+                missingFields:
+                  value:
+                    status: false
+                    msg: Application ID and status are required.
+                invalidStatus:
+                  value:
+                    status: false
+                    msg: Invalid status.
         '403':
           description: Application not found or access denied
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Update failed. Application not found or access denied.
         '500':
           description: Server error
+          content:
+            application/json:
+              example:
+                status: false
+                msg: An error occurred while updating application status.
 
   /api/dashboard/employer/get_tags.php:
     get:
@@ -1512,8 +1754,25 @@ paths:
       responses:
         '200':
           description: Profile retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Profile retrieved successfully.
+                data:
+                  data:
+                    firstname: Amaka
+                    lastname: Okafor
+                    email: amaka@talentforge.example
+                    employer_role: Hiring Manager
+                    profile_pic_url: https://cdn.example.com/profile.jpg
         '404':
           description: User not found
+          content:
+            application/json:
+              example:
+                status: false
+                msg: User not found.
 
   /api/dashboard/employer/update_profile.php:
     post:
@@ -1539,10 +1798,25 @@ paths:
       responses:
         '200':
           description: Profile updated
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Profile updated successfully.
         '400':
           description: Name fields required
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Name fields are required.
         '500':
           description: Server error
+          content:
+            application/json:
+              example:
+                status: false
+                msg: An error occurred while updating the profile.
 
   /api/dashboard/employer/get_company_profile.php:
     get:
@@ -1623,5 +1897,410 @@ paths:
                     msg: Company profile updated successfully.
         '400':
           description: Validation or file checks failed
+          content:
+            application/json:
+              examples:
+                missingRequired:
+                  value:
+                    status: false
+                    msg: Company name, location, and description are required.
+                invalidFile:
+                  value:
+                    status: false
+                    msg: Invalid file type. Only JPG and PNG allowed.
         '500':
           description: Upload or database error
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Database error while saving company profile.
+
+  /api/dashboard/shared/user_data.php:
+    get:
+      tags: [Shared Settings]
+      summary: Get authenticated user core profile data
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User data retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: User data retrieved successfully.
+                data:
+                  user:
+                    user_id: 24
+                    firstname: Amaka
+                    lastname: Okafor
+                    email: amaka@talentforge.example
+                    role: employer
+        '404':
+          description: User not found
+          content:
+            application/json:
+              example:
+                status: false
+                msg: User not found
+
+  /api/dashboard/shared/get_settings.php:
+    get:
+      tags: [Shared Settings]
+      summary: Get account settings for authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Settings retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Settings retrieved successfully
+                data:
+                  firstname: Amaka
+                  lastname: Okafor
+                  email: amaka@talentforge.example
+                  created_at: 2026-01-09T14:21:00Z
+                  linked_providers: [google]
+                  has_password: true
+        '404':
+          description: User not found
+          content:
+            application/json:
+              example:
+                status: false
+                msg: User not found
+        '500':
+          description: Server error
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Database query failed.
+
+  /api/dashboard/shared/update_account.php:
+    post:
+      tags: [Shared Settings]
+      summary: Update first and last name for authenticated user
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                  example: Amaka
+                lastName:
+                  type: string
+                  example: Okafor
+              required: [firstName, lastName]
+      responses:
+        '200':
+          description: Account updated
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Account updated successfully.
+                data:
+                  firstName: Amaka
+                  lastName: Okafor
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Invalid input data.
+                errors:
+                  firstName:
+                    - firstName must be at least 2 characters.
+        '500':
+          description: Update failed
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Error updating account.
+
+  /api/dashboard/shared/verify_old_password.php:
+    post:
+      tags: [Shared Settings]
+      summary: Verify current password before sensitive actions
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oldPassword:
+                  type: string
+                  format: password
+              required: [oldPassword]
+      responses:
+        '200':
+          description: Password verified
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Current password verified.
+        '400':
+          description: Validation failed or incorrect password
+          content:
+            application/json:
+              examples:
+                validation:
+                  value:
+                    status: false
+                    msg: Validation failed.
+                    errors:
+                      oldPassword:
+                        - Current password is required.
+                incorrect:
+                  value:
+                    status: false
+                    msg: Current password is incorrect.
+
+  /api/dashboard/shared/change_password.php:
+    post:
+      tags: [Shared Settings]
+      summary: Change account password for authenticated user
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oldPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+              required: [oldPassword, newPassword]
+      responses:
+        '200':
+          description: Password changed
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Password updated successfully.
+        '400':
+          description: Validation failed or incorrect old password
+          content:
+            application/json:
+              examples:
+                validation:
+                  value:
+                    status: false
+                    msg: Validation failed.
+                    errors:
+                      newPassword:
+                        - New password must be at least 8 characters.
+                incorrect:
+                  value:
+                    status: false
+                    msg: Current password is incorrect.
+        '500':
+          description: Password update failed
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Failed to update password.
+
+  /api/dashboard/shared/link_social.php:
+    post:
+      tags: [Shared Settings]
+      summary: Link a social provider to the current account
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider_id:
+                  type: string
+                  enum: [google.com, facebook.com]
+                  example: google.com
+                social_uid:
+                  type: string
+                  example: firebase_uid_abc123
+              required: [provider_id]
+      responses:
+        '200':
+          description: Account linked
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Account linked successfully
+                data:
+                  linked_providers: [google, facebook]
+        '400':
+          description: Invalid provider data or unsupported provider
+          content:
+            application/json:
+              examples:
+                invalidProviderData:
+                  value:
+                    status: false
+                    msg: Invalid provider data
+                unsupported:
+                  value:
+                    status: false
+                    msg: Unsupported provider
+        '409':
+          description: Provider already linked elsewhere
+          content:
+            application/json:
+              example:
+                status: false
+                msg: This account is already linked to another user.
+        '500':
+          description: Database update failed
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Database update failed
+
+  /api/dashboard/shared/upload_profile_photo.php:
+    post:
+      tags: [Shared Settings]
+      summary: Upload or replace profile photo for seeker/employer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required: [file]
+      responses:
+        '200':
+          description: Profile photo uploaded
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Profile photo uploaded successfully.
+                data:
+                  photoURL: https://res.cloudinary.com/demo/image/upload/profile_24_1713529000.jpg
+                  public_id: employer_24_1713529000
+        '400':
+          description: No file or invalid file constraints
+          content:
+            application/json:
+              examples:
+                noFile:
+                  value:
+                    status: false
+                    msg: No file uploaded.
+                invalidType:
+                  value:
+                    status: false
+                    msg: Invalid file type.
+                tooLarge:
+                  value:
+                    status: false
+                    msg: File too large. Max 5MB.
+        '500':
+          description: Upload failure
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Upload failed: Database update failed.
+
+  /api/dashboard/shared/delete_profile_photo.php:
+    post:
+      tags: [Shared Settings]
+      summary: Delete current profile photo for seeker/employer
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile photo deleted
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Profile photo deleted successfully
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Invalid request.
+        '500':
+          description: Database update failed
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Database update failed
+
+  /api/dashboard/shared/delete_account.php:
+    post:
+      tags: [Shared Settings]
+      summary: Permanently delete authenticated account and related assets
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                confirmation:
+                  type: string
+                  example: DELETE
+              required: [confirmation]
+      responses:
+        '200':
+          description: Account deleted
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Account deleted successfully
+        '400':
+          description: Invalid confirmation text
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Invalid confirmation text
+        '500':
+          description: Delete failed
+          content:
+            application/json:
+              example:
+                status: false
+                msg: Delete failed: User not found or already deleted
