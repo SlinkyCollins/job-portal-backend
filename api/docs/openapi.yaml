@@ -2206,7 +2206,7 @@ paths:
             application/json:
               example:
                 status: false
-                message: Upload failed: Database update failed.
+                message: "Upload failed: Database update failed."
 
   /api/dashboard/shared/delete_profile_photo.php:
     post:
@@ -2275,5 +2275,5 @@ paths:
             application/json:
               example:
                 status: false
-                message: Delete failed: User not found or already deleted
+                message: "Delete failed: User not found or already deleted"
 
