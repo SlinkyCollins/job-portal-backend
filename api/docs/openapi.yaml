@@ -893,7 +893,7 @@ paths:
                 status: true
                 msg: Users retrieved successfully.
                 data:
-                  data:
+                  users:
                     - user_id: 77
                       firstname: Jane
                       lastname: Doe
@@ -926,7 +926,7 @@ paths:
                 status: true
                 msg: Jobs retrieved successfully.
                 data:
-                  data:
+                  jobs:
                     - job_id: 15
                       job_title: Backend Developer
                       job_type: full-time
@@ -953,7 +953,7 @@ paths:
                 status: true
                 msg: Categories retrieved successfully.
                 data:
-                  data:
+                  categories:
                     - id: 1
                       name: Engineering
                       job_count: 28
@@ -1361,7 +1361,7 @@ paths:
                 status: true
                 msg: Employer jobs retrieved successfully.
                 data:
-                  data:
+                  jobs:
                     - job_id: 31
                       title: Product Designer
                       employment_type: contract
@@ -1406,7 +1406,7 @@ paths:
                 status: true
                 msg: Job details retrieved successfully.
                 data:
-                  data:
+                  job:
                     job_id: 31
                     title: Product Designer
                     category_id: 3
@@ -1446,7 +1446,7 @@ paths:
                 status: true
                 msg: Applications retrieved successfully.
                 data:
-                  data:
+                  applications:
                     - application_id: 88
                       status: pending
                       applied_at: 2026-04-16T11:25:00Z
@@ -1737,7 +1737,7 @@ paths:
                 status: true
                 msg: Tags retrieved successfully.
                 data:
-                  data:
+                  tags:
                     - id: 1
                       name: PHP
                     - id: 2
@@ -1760,7 +1760,7 @@ paths:
                 status: true
                 msg: Profile retrieved successfully.
                 data:
-                  data:
+                  profile:
                     firstname: Amaka
                     lastname: Okafor
                     email: amaka@talentforge.example
