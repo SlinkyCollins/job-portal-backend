@@ -19,6 +19,10 @@ tags:
     description: Public and authenticated job endpoints
   - name: Seeker Profile
     description: Job seeker profile management
+  - name: Admin Dashboard
+    description: Admin-only management endpoints
+  - name: Employer Dashboard
+    description: Employer dashboard and job management endpoints
 
 components:
   securitySchemes:
@@ -822,3 +826,802 @@ paths:
                   value:
                     status: false
                     msg: Country validation config is missing or invalid.
+
+  /api/dashboard/admin/admin_dashboard.php:
+    get:
+      tags: [Admin Dashboard]
+      summary: Load current admin profile data
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Admin dashboard loaded
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Admin dashboard loaded successfully.
+                data:
+                  user:
+                    user_id: 1
+                    firstname: Super
+                    lastname: Admin
+                    email: admin@example.com
+                    role: admin
+        '401':
+          description: Unauthorized
+        '404':
+          description: User data missing
+
+  /api/dashboard/admin/get_stats.php:
+    get:
+      tags: [Admin Dashboard]
+      summary: Get platform statistics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Stats retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Stats retrieved successfully
+                data:
+                  total_users: 248
+                  job_seekers: 198
+                  employers: 49
+                  total_jobs: 381
+                  applications: 956
+        '500':
+          description: Server error
+
+  /api/dashboard/admin/get_users.php:
+    get:
+      tags: [Admin Dashboard]
+      summary: List users excluding current admin
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Users retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Users retrieved successfully.
+                data:
+                  data:
+                    - user_id: 77
+                      firstname: Jane
+                      lastname: Doe
+                      email: jane@example.com
+                      role: employer
+                      createdat: 2026-03-01T09:12:00Z
+                      suspended: 0
+                      job_count: 3
+
+  /api/dashboard/admin/get_jobs.php:
+    get:
+      tags: [Admin Dashboard]
+      summary: List all jobs with optional status filter
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by status or use all
+          schema:
+            type: string
+            enum: [all, active, pending, closed]
+            default: all
+      responses:
+        '200':
+          description: Jobs retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Jobs retrieved successfully.
+                data:
+                  data:
+                    - job_id: 15
+                      job_title: Backend Developer
+                      job_type: full-time
+                      location: Remote
+                      status: active
+                      created_at: 2026-04-11T10:22:00Z
+                      company_name: Talent Forge
+                      firstname: Musa
+                      lastname: Ibrahim
+                      application_count: 14
+
+  /api/dashboard/admin/get_categories.php:
+    get:
+      tags: [Admin Dashboard]
+      summary: List categories with active job counts
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Categories retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Categories retrieved successfully.
+                data:
+                  data:
+                    - id: 1
+                      name: Engineering
+                      job_count: 28
+
+  /api/dashboard/admin/add_category.php:
+    post:
+      tags: [Admin Dashboard]
+      summary: Create a new category
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Product Design
+              required: [name]
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Category added successfully
+        '400':
+          description: Missing category name
+        '409':
+          description: Duplicate category
+
+  /api/dashboard/admin/update_category.php:
+    post:
+      tags: [Admin Dashboard]
+      summary: Update a category name
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  example: 3
+                name:
+                  type: string
+                  example: Growth Marketing
+              required: [id, name]
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Category updated successfully
+        '400':
+          description: Missing fields
+        '409':
+          description: Duplicate category name
+
+  /api/dashboard/admin/delete_category.php:
+    post:
+      tags: [Admin Dashboard]
+      summary: Delete a category
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  example: 5
+              required: [id]
+      responses:
+        '200':
+          description: Category deleted
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Category deleted successfully
+        '400':
+          description: Category ID required
+
+  /api/dashboard/admin/delete_job.php:
+    post:
+      tags: [Admin Dashboard]
+      summary: Delete any job by id
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_id:
+                  type: integer
+                  example: 44
+              required: [job_id]
+      responses:
+        '200':
+          description: Job deleted
+        '400':
+          description: Job ID required
+
+  /api/dashboard/admin/delete_user.php:
+    post:
+      tags: [Admin Dashboard]
+      summary: Delete user and associated assets
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  example: 91
+              required: [user_id]
+      responses:
+        '200':
+          description: User deleted
+          content:
+            application/json:
+              example:
+                status: true
+                msg: User and all associated data deleted successfully.
+        '403':
+          description: Cannot delete admin
+        '404':
+          description: User not found
+        '500':
+          description: Deletion failure
+
+  /api/dashboard/admin/suspend_user.php:
+    post:
+      tags: [Admin Dashboard]
+      summary: Suspend or unsuspend a user
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  example: 21
+                action:
+                  type: string
+                  enum: [suspend, unsuspend]
+                  example: suspend
+              required: [user_id, action]
+      responses:
+        '200':
+          description: User suspension state updated
+        '400':
+          description: Invalid request
+        '403':
+          description: Cannot suspend admin
+        '404':
+          description: User not found
+
+  /api/dashboard/admin/update_job_status.php:
+    post:
+      tags: [Admin Dashboard]
+      summary: Change job status to active or closed
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_id:
+                  type: integer
+                  example: 12
+                status:
+                  type: string
+                  enum: [active, closed]
+                  example: active
+              required: [job_id, status]
+      responses:
+        '200':
+          description: Job status updated
+        '400':
+          description: Invalid job id or status
+
+  /api/dashboard/admin/update_password.php:
+    post:
+      tags: [Admin Dashboard]
+      summary: Update admin account password
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                current_password:
+                  type: string
+                  format: password
+                new_password:
+                  type: string
+                  format: password
+              required: [current_password, new_password]
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Password updated successfully.
+        '400':
+          description: Validation failed or wrong current password
+        '500':
+          description: Password update failure
+
+  /api/dashboard/employer/employer_dashboard.php:
+    get:
+      tags: [Employer Dashboard]
+      summary: Load employer dashboard profile info
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard loaded
+        '403':
+          description: Employer suspended
+        '404':
+          description: No user data found
+
+  /api/dashboard/employer/get_dashboard_data.php:
+    get:
+      tags: [Employer Dashboard]
+      summary: Retrieve dashboard stats and recent jobs
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard data retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Dashboard data retrieved successfully.
+                data:
+                  stats:
+                    total_jobs: 14
+                    active_jobs: 6
+                    total_applications: 89
+                    shortlisted_count: 12
+                  recentJobs:
+                    - job_id: 31
+                      title: Product Designer
+                      employment_type: contract
+                      location: Lagos
+                      status: active
+                      published_at: 2026-04-14T10:00:00Z
+                      logo_url: https://cdn.example.com/company.png
+        '500':
+          description: Server error
+
+  /api/dashboard/employer/get_employer_jobs.php:
+    get:
+      tags: [Employer Dashboard]
+      summary: List jobs posted by current employer with filters
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [all, new, old, active, pending, closed]
+            default: all
+      responses:
+        '200':
+          description: Employer jobs retrieved
+        '500':
+          description: Query failure
+
+  /api/dashboard/employer/get_job_details.php:
+    get:
+      tags: [Employer Dashboard]
+      summary: Fetch one employer-owned job for editing
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: job_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Job details retrieved
+        '400':
+          description: Job ID required
+        '404':
+          description: Job not found
+
+  /api/dashboard/employer/get_applications.php:
+    get:
+      tags: [Employer Dashboard]
+      summary: List applications for employer jobs (excluding retracted)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Applications retrieved
+        '500':
+          description: Query failure
+
+  /api/dashboard/employer/post_job.php:
+    post:
+      tags: [Employer Dashboard]
+      summary: Create a new job post
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                category_id: { type: integer }
+                employment_type: { type: string }
+                location: { type: string }
+                salary_amount: { type: number }
+                currency: { type: string }
+                salary_duration: { type: string }
+                experience_level: { type: string }
+                english_fluency: { type: string, nullable: true }
+                overview: { type: string }
+                description: { type: string }
+                responsibilities: { type: string }
+                requirements: { type: string }
+                nice_to_have: { type: string, nullable: true }
+                benefits: { type: string, nullable: true }
+                deadline: { type: string, format: date, nullable: true }
+                tags:
+                  type: array
+                  items: { type: string }
+              required:
+                - title
+                - category_id
+                - employment_type
+                - location
+                - salary_amount
+                - currency
+                - salary_duration
+                - experience_level
+                - overview
+                - description
+                - responsibilities
+                - requirements
+      responses:
+        '201':
+          description: Job posted
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Job posted successfully.
+                data:
+                  job_id: 223
+        '400':
+          description: Validation failure
+        '403':
+          description: Missing employer/company profile
+        '500':
+          description: Server error
+
+  /api/dashboard/employer/update_job.php:
+    post:
+      tags: [Employer Dashboard]
+      summary: Update an existing employer-owned job
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_id: { type: integer }
+                title: { type: string }
+                category_id: { type: integer }
+                employment_type: { type: string }
+                location: { type: string }
+                salary_amount: { type: number }
+                currency: { type: string }
+                salary_duration: { type: string }
+                experience_level: { type: string }
+                english_fluency: { type: string, nullable: true }
+                overview: { type: string }
+                description: { type: string }
+                responsibilities: { type: string }
+                requirements: { type: string }
+                nice_to_have: { type: string, nullable: true }
+                benefits: { type: string, nullable: true }
+                deadline: { type: string, format: date, nullable: true }
+                tags:
+                  type: array
+                  items: { type: string }
+              required: [job_id, title]
+      responses:
+        '200':
+          description: Job updated
+        '400':
+          description: Missing required fields
+        '500':
+          description: Update failure
+
+  /api/dashboard/employer/close_job.php:
+    post:
+      tags: [Employer Dashboard]
+      summary: Close an employer-owned job
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_id:
+                  type: integer
+              required: [job_id]
+      responses:
+        '200':
+          description: Job closed
+        '400':
+          description: Job ID required
+        '404':
+          description: Job not found or not owned by employer
+
+  /api/dashboard/employer/delete_job.php:
+    post:
+      tags: [Employer Dashboard]
+      summary: Delete an employer-owned job
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_id:
+                  type: integer
+              required: [job_id]
+      responses:
+        '200':
+          description: Job deleted
+        '400':
+          description: Job ID is required
+        '404':
+          description: Job not found or access denied
+        '500':
+          description: Server error
+
+  /api/dashboard/employer/update_application_status.php:
+    post:
+      tags: [Employer Dashboard]
+      summary: Update a job application status
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                application_id:
+                  type: integer
+                status:
+                  type: string
+                  enum: [pending, shortlisted, accepted, rejected]
+              required: [application_id, status]
+      responses:
+        '200':
+          description: Status updated
+        '400':
+          description: Invalid request data
+        '403':
+          description: Application not found or access denied
+        '500':
+          description: Server error
+
+  /api/dashboard/employer/get_tags.php:
+    get:
+      tags: [Employer Dashboard]
+      summary: List available tags for job posting
+      responses:
+        '200':
+          description: Tags retrieved
+          content:
+            application/json:
+              example:
+                status: true
+                msg: Tags retrieved successfully.
+                data:
+                  data:
+                    - id: 1
+                      name: PHP
+                    - id: 2
+                      name: MySQL
+        '500':
+          description: Server error
+
+  /api/dashboard/employer/get_profile.php:
+    get:
+      tags: [Employer Dashboard]
+      summary: Get employer profile information
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+        '404':
+          description: User not found
+
+  /api/dashboard/employer/update_profile.php:
+    post:
+      tags: [Employer Dashboard]
+      summary: Update employer profile basic fields
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstname:
+                  type: string
+                lastname:
+                  type: string
+                employer_role:
+                  type: string
+                  nullable: true
+              required: [firstname, lastname]
+      responses:
+        '200':
+          description: Profile updated
+        '400':
+          description: Name fields required
+        '500':
+          description: Server error
+
+  /api/dashboard/employer/get_company_profile.php:
+    get:
+      tags: [Employer Dashboard]
+      summary: Get current employer company profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Company profile retrieval result
+          content:
+            application/json:
+              examples:
+                hasCompany:
+                  value:
+                    status: true
+                    msg: Company profile retrieved successfully.
+                    data:
+                      has_company: true
+                      data:
+                        id: 4
+                        name: Talent Forge
+                        logo_url: https://cdn.example.com/logo.png
+                        website: https://talentforge.example
+                        location: Lagos
+                        description: Hiring top-tier engineers.
+                        created_at: 2026-02-10T13:00:00Z
+                noCompany:
+                  value:
+                    status: true
+                    msg: No company profile found.
+                    data:
+                      has_company: false
+                      data: null
+        '500':
+          description: Database error
+
+  /api/dashboard/employer/save_company_profile.php:
+    post:
+      tags: [Employer Dashboard]
+      summary: Create or update company profile with optional logo upload
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                location:
+                  type: string
+                website:
+                  type: string
+                  nullable: true
+                description:
+                  type: string
+                logo:
+                  type: string
+                  format: binary
+                  nullable: true
+              required: [name, location, description]
+      responses:
+        '200':
+          description: Company profile created or updated
+          content:
+            application/json:
+              examples:
+                created:
+                  value:
+                    status: true
+                    msg: Company profile created successfully.
+                updated:
+                  value:
+                    status: true
+                    msg: Company profile updated successfully.
+        '400':
+          description: Validation or file checks failed
+        '500':
+          description: Upload or database error
