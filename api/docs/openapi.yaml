@@ -846,8 +846,8 @@ paths:
                 data:
                   user:
                     user_id: 1
-                    firstname: Super
-                    lastname: Admin
+                    first_name: Super
+                    last_name: Admin
                     email: admin@example.com
                     role: admin
         '401':
@@ -895,11 +895,11 @@ paths:
                 data:
                   users:
                     - user_id: 77
-                      firstname: Jane
-                      lastname: Doe
+                      first_name: Jane
+                      last_name: Doe
                       email: jane@example.com
                       role: employer
-                      createdat: 2026-03-01T09:12:00Z
+                      created_at: 2026-03-01T09:12:00Z
                       suspended: 0
                       job_count: 3
 
@@ -934,8 +934,8 @@ paths:
                       status: active
                       created_at: 2026-04-11T10:22:00Z
                       company_name: Talent Forge
-                      firstname: Musa
-                      lastname: Ibrahim
+                      first_name: Musa
+                      last_name: Ibrahim
                       application_count: 14
 
   /api/dashboard/admin/get_categories.php:
@@ -1277,8 +1277,8 @@ paths:
                 data:
                   user:
                     user_id: 24
-                    firstname: Amaka
-                    lastname: Okafor
+                    first_name: Amaka
+                    last_name: Okafor
                     email: amaka@talentforge.example
                     role: employer
                     suspended: 0
@@ -1318,7 +1318,7 @@ paths:
                     active_jobs: 6
                     total_applications: 89
                     shortlisted_count: 12
-                  recentJobs:
+                  recent_jobs:
                     - job_id: 31
                       title: Product Designer
                       employment_type: contract
@@ -1452,8 +1452,8 @@ paths:
                       applied_at: 2026-04-16T11:25:00Z
                       cover_letter: I am a strong fit for this role.
                       job_title: Product Designer
-                      firstname: John
-                      lastname: Daniel
+                      first_name: John
+                      last_name: Daniel
                       email: john@example.com
                       cv_url: https://res.cloudinary.com/demo/raw/upload/cv_123.pdf
                       profile_pic_url: https://res.cloudinary.com/demo/image/upload/profile_123.jpg
@@ -1761,8 +1761,8 @@ paths:
                 msg: Profile retrieved successfully.
                 data:
                   profile:
-                    firstname: Amaka
-                    lastname: Okafor
+                    first_name: Amaka
+                    last_name: Okafor
                     email: amaka@talentforge.example
                     employer_role: Hiring Manager
                     profile_pic_url: https://cdn.example.com/profile.jpg
@@ -1933,8 +1933,8 @@ paths:
                 data:
                   user:
                     user_id: 24
-                    firstname: Amaka
-                    lastname: Okafor
+                    first_name: Amaka
+                    last_name: Okafor
                     email: amaka@talentforge.example
                     role: employer
         '404':
@@ -1960,8 +1960,8 @@ paths:
                 status: true
                 msg: Settings retrieved successfully
                 data:
-                  firstname: Amaka
-                  lastname: Okafor
+                  first_name: Amaka
+                  last_name: Okafor
                   email: amaka@talentforge.example
                   created_at: 2026-01-09T14:21:00Z
                   linked_providers: [google]
@@ -2010,8 +2010,8 @@ paths:
                 status: true
                 msg: Account updated successfully.
                 data:
-                  firstName: Amaka
-                  lastName: Okafor
+                  first_name: Amaka
+                  last_name: Okafor
         '400':
           description: Invalid input data
           content:
@@ -2020,8 +2020,8 @@ paths:
                 status: false
                 msg: Invalid input data.
                 errors:
-                  firstName:
-                    - firstName must be at least 2 characters.
+                  first_name:
+                    - First name must be at least 2 characters.
         '500':
           description: Update failed
           content:
@@ -2209,7 +2209,7 @@ paths:
                 status: true
                 msg: Profile photo uploaded successfully.
                 data:
-                  photoURL: https://res.cloudinary.com/demo/image/upload/profile_24_1713529000.jpg
+                  photo_url: https://res.cloudinary.com/demo/image/upload/profile_24_1713529000.jpg
                   public_id: employer_24_1713529000
         '400':
           description: No file or invalid file constraints
@@ -2234,7 +2234,7 @@ paths:
             application/json:
               example:
                 status: false
-                msg: Upload failed: Database update failed.
+                msg: Upload failed. Database update failed.
 
   /api/dashboard/shared/delete_profile_photo.php:
     post:
@@ -2303,4 +2303,4 @@ paths:
             application/json:
               example:
                 status: false
-                msg: Delete failed: User not found or already deleted
+                msg: Delete failed. User not found or already deleted
