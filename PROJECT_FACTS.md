@@ -2,21 +2,17 @@
 
 ## Overview
 
-JobNet is a full-stack recruitment platform built over roughly one year with a separate frontend and backend repository structure.
+JobNet is a full-stack recruitment platform developed over approximately one year with a separate frontend and backend repository structure.
 
-## Project Type
+## Project Snapshot
 
-- Full-stack recruitment platform
+| Field | Details |
+|---|---|
+| Project type | Full-stack recruitment platform |
+| Development duration | Approximately 1 year |
+| Architecture | Separate frontend and backend repositories |
 
-## Development Duration
-
-- Approximately 1 year
-
-## Architecture
-
-- Separate frontend and backend repositories
-
-## Stack
+## Technology Stack
 
 ### Frontend
 
@@ -33,7 +29,7 @@ JobNet is a full-stack recruitment platform built over roughly one year with a s
 - JWT
 - Docker
 
-### Cloud
+### Cloud and Infrastructure
 
 - Render
 - Vercel
@@ -52,10 +48,10 @@ JobNet is a full-stack recruitment platform built over roughly one year with a s
 | Supported currencies | 4 |
 | Upload features | 3 |
 | Core features | 13 |
-| Git commits | 513 |
+| Git commits | 513+ |
 | Development duration | ~1 year |
 
-## Major Features
+## Core Features
 
 - Hybrid authentication
 - Email/password login
@@ -71,7 +67,7 @@ JobNet is a full-stack recruitment platform built over roughly one year with a s
 - Resume upload
 - Company profiles
 
-## Interesting Engineering Challenges
+## Engineering Highlights
 
 ### Hybrid Authentication
 
@@ -85,7 +81,7 @@ Merged Firebase identities with relational MySQL users while supporting:
 
 ### Salary Normalization
 
-Implemented multi-currency salary support with automatic exchange-rate conversion for consistent job comparisons.
+Implemented multi-currency salary support with automatic exchange-rate conversion to enable consistent job comparisons.
 
 ### Role-Based Authorization
 
@@ -129,9 +125,9 @@ Manually validated:
 ## Lessons Learned
 
 - Hybrid authentication introduces significant state synchronization challenges.
-- Designing API-first simplified frontend development.
-- Functionality-first development accelerated MVP completion before UI polishing.
-- Clean project structure and modular APIs improved maintainability as the project grew.
+- An API-first approach simplified frontend development.
+- A functionality-first workflow accelerated MVP delivery before UI polishing.
+- A clean project structure and modular APIs improved maintainability as the project grew.
 
 ## Future Improvements
 
