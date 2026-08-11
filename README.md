@@ -4,6 +4,14 @@
 
 The server-side infrastructure for **JobNet**. This is a **Dockerized**, pure PHP API designed for speed and portability. It functions as a true MVP backend: everything is functional, testable, and connected. It implements a custom routing engine and a **Unified Identity Layer** that bridges Firebase Auth with a relational MySQL database.
 
+### Baseline Compatibility
+
+This backend build is validated against the JobNet v1.0.0 frontend baseline.
+
+- Frontend baseline: [BASELINE.md](https://github.com/SlinkyCollins/job-portal-frontend/blob/master/baselines/v1.0.0/BASELINE.md)
+- Verified backend commit: `7b78010`
+- Notes: Compatible with the JobNet v1.0.0 baseline validation set
+
 ### 🧠 Core Architecture
 JobNet is not just a concept demo; it implements complex system design patterns to ensure scalability and security.
 
