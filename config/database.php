@@ -6,7 +6,7 @@ require_once __DIR__ . '/api_response.php';
 // Load .env only if it exists (optional for local dev)
 if (file_exists(__DIR__ . '/../.env')) {
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-    $dotenv->load();
+    $dotenv->safeLoad();
 }
 
 // --- ENVIRONMENT SWITCH ---
@@ -21,6 +21,15 @@ if ($env === 'production') {
     $db   = $_ENV['DB_NAME'];
     $caCert = __DIR__ . '/../certs/ca.pem'; // SSL cert for Aiven
     $useSSL = true;
+} elseif ($env === 'testing') {
+    // Testing settings
+    $host = $_ENV['DB_HOST_TEST'];
+    $port = $_ENV['DB_PORT_TEST'];
+    $user = $_ENV['DB_USER_TEST'];
+    $pass = $_ENV['DB_PASS_TEST'];
+    $db   = $_ENV['DB_NAME_TEST'];
+    $caCert = null; // No SSL for testing
+    $useSSL = false;
 } else {
     // Local (XAMPP) settings
     $host = $_ENV['DB_HOST_LOCAL'];
