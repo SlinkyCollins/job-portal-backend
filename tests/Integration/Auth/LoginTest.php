@@ -267,6 +267,44 @@ final class LoginTest extends TestCase
         );
     }
 
+    public function test_user_cannot_login_with_invalid_email_format(): void
+    {
+        $response = $this->postJson(
+            '/api/auth/login.php',
+            [
+                'mail' => 'invalid-email',
+                'pword' => self::TEST_PASSWORD,
+            ]
+        );
+
+        $this->assertSame(400, $response['statusCode']);
+        $this->assertFalse($response['body']['status']);
+        $this->assertSame(
+            'Validation failed.',
+            $response['body']['message']
+        );
+    }
+
+    public function test_user_cannot_login_with_empty_credentials(): void
+    {
+        $response = $this->postJson(
+            '/api/auth/login.php',
+            [
+                'mail' => '',
+                'pword' => '',
+            ]
+        );
+
+        $this->assertSame(400, $response['statusCode']);
+        $this->assertFalse($response['body']['status']);
+        $this->assertSame(
+            'Validation failed.',
+            $response['body']['message']
+        );
+
+        $this->assertArrayHasKey('errors', $response['body']);
+    }
+
     private function postJson(string $path, array $payload): array
     {
         $ch = curl_init(self::BASE_URL . $path);
