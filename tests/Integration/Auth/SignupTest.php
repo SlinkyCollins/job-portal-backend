@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-final class LoginTest extends TestCase
+final class SignupTest extends TestCase
 {
     private const BASE_URL = 'http://localhost/JobPortal';
-    private const TEST_EMAIL = 'test.login@jobnet.test';
+    private const TEST_EMAIL = 'test.signup@jobnet.test';
     private const TEST_PASSWORD = 'TestPassword123!';
 
     private mysqli $db;
@@ -52,13 +52,163 @@ final class LoginTest extends TestCase
     private function deleteTestUser(): void
     {
         $this->db->query(
+            "DELETE FROM job_seekers_table WHERE user_id IN (
+                SELECT user_id FROM users_table WHERE email = '" .
+            self::TEST_EMAIL .
+            "'
+            )"
+        );
+
+        $this->db->query(
             "DELETE FROM users_table WHERE email = '" .
             self::TEST_EMAIL .
             "'"
         );
     }
 
-    public function test_user_can_login_with_valid_credentials(): void
+    public function test_user_can_signup_as_job_seeker(): void
+    {
+        // Arrange
+        $firstname = 'Test';
+        $lastname = 'Signup';
+        $email = self::TEST_EMAIL;
+        $password = self::TEST_PASSWORD;
+        $role = 'job_seeker';
+        $terms = 1;
+
+        // Act
+        $response = $this->postJson(
+            '/api/auth/signup.php',
+            [
+                'fname' => $firstname,
+                'lname' => $lastname,
+                'mail' => $email,
+                'pword' => $password,
+                'role' => $role,
+                'terms' => $terms,
+            ]
+        );
+
+        // Assert
+        $this->assertSame(
+            201,
+            $response['statusCode'],
+            'Expected HTTP status code 201 for successful signup.'
+        );
+
+        $this->assertTrue($response['body']['status']);
+
+        $this->assertSame(
+            'User signed up successfully.',
+            $response['body']['message']
+        );
+
+        $result = $this->db->query(
+            "SELECT u.user_id, u.password, js.user_id AS seeker_user_id
+             FROM users_table u
+             INNER JOIN job_seekers_table js ON js.user_id = u.user_id
+             WHERE u.email = '$email' AND u.role = '$role'"
+        );
+
+        $user = $result->fetch_assoc();
+
+        $this->assertIsArray($user, 'Expected user and job seeker records to exist.');
+        $this->assertSame($user['user_id'], $user['seeker_user_id']);
+        $this->assertNotSame($password, $user['password']);
+    }
+
+    public function test_user_can_signup_as_employer(): void
+    {
+        // Arrange
+        $firstname = 'Test';
+        $lastname = 'Signup';
+        $email = self::TEST_EMAIL;
+        $password = self::TEST_PASSWORD;
+        $role = 'employer';
+        $terms = 1;
+
+        // Act
+        $response = $this->postJson(
+            '/api/auth/signup.php',
+            [
+                'fname' => $firstname,
+                'lname' => $lastname,
+                'mail' => $email,
+                'pword' => $password,
+                'role' => $role,
+                'terms' => $terms,
+            ]
+        );
+
+        // Assert
+        $this->assertSame(
+            201,
+            $response['statusCode'],
+            'Expected HTTP status code 201 for successful signup.'
+        );
+
+        $this->assertTrue($response['body']['status']);
+
+        $this->assertSame(
+            'User signed up successfully.',
+            $response['body']['message']
+        );
+
+        $result = $this->db->query(
+            "SELECT u.user_id, u.password, e.user_id AS employer_user_id
+             FROM users_table u
+             INNER JOIN employers_table e ON e.user_id = u.user_id
+             WHERE u.email = '$email' AND u.role = '$role'"
+        );
+
+        $user = $result->fetch_assoc();
+
+        $this->assertIsArray($user, 'Expected user and employer records to exist.');
+        $this->assertSame($user['user_id'], $user['employer_user_id']);
+        $this->assertNotSame($password, $user['password']);
+    }
+
+    public function test_user_cannot_signup_with_invalid_data(): void
+    {
+        // Arrange
+        $firstname = '';
+        $lastname = 'Signup';
+        $email = '2.mailcom';
+        $password = self::TEST_PASSWORD;
+        $role = 'employer';
+        $terms = 1;
+
+        // Act
+        $response = $this->postJson(
+            '/api/auth/signup.php',
+            [
+                'fname' => $firstname,
+                'lname' => $lastname,
+                'mail' => $email,
+                'pword' => $password,
+                'role' => $role,
+                'terms' => $terms,
+            ]
+        );
+
+        // Assert
+        $this->assertSame(400, $response['statusCode'], 'Expected HTTP status code 400 for validation failure.');
+
+        $this->assertFalse($response['body']['status']);
+
+        $this->assertSame(
+            'Validation failed.',
+            $response['body']['message']
+        );
+
+        $result = $this->db->query(
+            "SELECT user_id FROM users_table WHERE email = '" . $email . "'"
+        );
+
+        $this->assertNull($result->fetch_assoc(), 'Expected user record to not exist.');
+    }
+
+    public function test_user_cannot_signup_with_existing_email(): void
     {
         // Arrange
         $hashedPassword = password_hash(
@@ -76,7 +226,7 @@ final class LoginTest extends TestCase
         $lastname = 'Login';
         $email = self::TEST_EMAIL;
         $role = 'job_seeker';
-        $suspended = 0;
+        $terms = 1;
 
         $stmt->bind_param(
             'sssssi',
@@ -85,7 +235,7 @@ final class LoginTest extends TestCase
             $email,
             $hashedPassword,
             $role,
-            $suspended
+            $terms
         );
 
         $stmt->execute();
@@ -96,214 +246,42 @@ final class LoginTest extends TestCase
 
         // Act
         $response = $this->postJson(
-            '/api/auth/login.php',
+            '/api/auth/signup.php',
             [
+                'fname' => $firstname,
+                'lname' => $lastname,
                 'mail' => self::TEST_EMAIL,
                 'pword' => self::TEST_PASSWORD,
+                'role' => $role,
+                'terms' => $terms,
             ]
         );
 
-        // Assert
-        $this->assertSame(200, $response['statusCode']);
-
-        $this->assertTrue($response['body']['status']);
-
+        // Assert 
         $this->assertSame(
-            'Login successful.',
-            $response['body']['message']
+            409,
+            $response['statusCode'],
+            'Expected HTTP status code 409 for existing email.'
         );
-
-        $this->assertArrayHasKey(
-            'token',
-            $response['body']
-        );
-
-        $this->assertNotEmpty(
-            $response['body']['token']
-        );
-
-        $this->assertSame(
-            $userId,
-            $response['body']['user']['user_id']
-        );
-
-        $this->assertSame(
-            'job_seeker',
-            $response['body']['user']['role']
-        );
-
-        $this->assertSame(
-            self::TEST_EMAIL,
-            $response['body']['user']['email']
-        );
-    }
-
-    public function test_user_cannot_login_with_invalid_password(): void
-    {
-        // Arrange
-        $hashedPassword = password_hash(
-            self::TEST_PASSWORD,
-            PASSWORD_DEFAULT
-        );
-
-        $stmt = $this->db->prepare(
-            "INSERT INTO users_table
-                (firstname, lastname, email, password, role, suspended)
-             VALUES (?, ?, ?, ?, ?, ?)"
-        );
-
-        $firstname = 'Test';
-        $lastname = 'Login';
-        $email = self::TEST_EMAIL;
-        $role = 'job_seeker';
-        $suspended = 0;
-
-        $stmt->bind_param(
-            'sssssi',
-            $firstname,
-            $lastname,
-            $email,
-            $hashedPassword,
-            $role,
-            $suspended
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
-
-        // Act
-        $response = $this->postJson(
-            '/api/auth/login.php',
-            [
-                'mail' => self::TEST_EMAIL,
-                'pword' => 'WrongPassword123!',
-            ]
-        );
-
-        // Assert
-        $this->assertSame(401, $response['statusCode']);
 
         $this->assertFalse($response['body']['status']);
 
         $this->assertSame(
-            'Incorrect password.',
+            'Email already exists.',
             $response['body']['message']
         );
-    }
-
-    public function test_user_cannot_login_with_nonexistent_email(): void
-    {
-        // Act
-        $response = $this->postJson(
-            '/api/auth/login.php',
-            [
-                'mail' => 'randomUser@gmail.com',
-                'pword' => 'randompassword123',
-            ]
+        
+        $resultCount = $this->db->query(
+            "SELECT COUNT(*) as count FROM users_table WHERE email = '" . self::TEST_EMAIL . "'"
         );
-
-        // Assert
-        $this->assertSame(404, $response['statusCode']);
-
-        $this->assertFalse($response['body']['status']);
+        
+        $userCount = (int) $resultCount->fetch_assoc()['count'];
 
         $this->assertSame(
-            'User not found. Please try signing up.',
-            $response['body']['message']
+            1,
+            $userCount,
+            'Expected exactly one user record; duplicate signup must not create a second user.'
         );
-    }
-
-    public function test_suspended_user_cannot_login(): void
-    {
-        // Arrange
-        $hashedPassword = password_hash(
-            self::TEST_PASSWORD,
-            PASSWORD_DEFAULT
-        );
-
-        $stmt = $this->db->prepare(
-            "INSERT INTO users_table
-                (firstname, lastname, email, password, role, suspended)
-             VALUES (?, ?, ?, ?, ?, ?)"
-        );
-
-        $firstname = 'Test';
-        $lastname = 'Login';
-        $email = self::TEST_EMAIL;
-        $role = 'job_seeker';
-        $suspended = 1;
-
-        $stmt->bind_param(
-            'sssssi',
-            $firstname,
-            $lastname,
-            $email,
-            $hashedPassword,
-            $role,
-            $suspended
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
-
-        // Act 
-        $response = $this->postJson(
-            '/api/auth/login.php',
-            [
-                'mail' => self::TEST_EMAIL,
-                'pword' => self::TEST_PASSWORD,
-            ]
-        );
-
-        // Assert
-        $this->assertSame(403, $response['statusCode']);
-
-        $this->assertFalse($response['body']['status']);
-
-        $this->assertSame(
-            'Your account has been suspended. Please contact support.',
-            $response['body']['message']
-        );
-    }
-
-    public function test_user_cannot_login_with_invalid_email_format(): void
-    {
-        $response = $this->postJson(
-            '/api/auth/login.php',
-            [
-                'mail' => 'invalid-email',
-                'pword' => self::TEST_PASSWORD,
-            ]
-        );
-
-        $this->assertSame(400, $response['statusCode']);
-        $this->assertFalse($response['body']['status']);
-        $this->assertSame(
-            'Validation failed.',
-            $response['body']['message']
-        );
-    }
-
-    public function test_user_cannot_login_with_empty_credentials(): void
-    {
-        $response = $this->postJson(
-            '/api/auth/login.php',
-            [
-                'mail' => '',
-                'pword' => '',
-            ]
-        );
-
-        $this->assertSame(400, $response['statusCode']);
-        $this->assertFalse($response['body']['status']);
-        $this->assertSame(
-            'Validation failed.',
-            $response['body']['message']
-        );
-
-        $this->assertArrayHasKey('errors', $response['body']);
     }
 
     private function postJson(string $path, array $payload): array
