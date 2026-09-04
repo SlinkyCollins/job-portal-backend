@@ -60,6 +60,14 @@ final class SignupTest extends TestCase
         );
 
         $this->db->query(
+            "DELETE FROM employers_table WHERE user_id IN (
+                SELECT user_id FROM users_table WHERE email = '" .
+            self::TEST_EMAIL .
+            "'
+            )"
+        );
+
+        $this->db->query(
             "DELETE FROM users_table WHERE email = '" .
             self::TEST_EMAIL .
             "'"
@@ -240,8 +248,6 @@ final class SignupTest extends TestCase
 
         $stmt->execute();
 
-        $userId = $this->db->insert_id;
-
         $stmt->close();
 
         // Act
@@ -270,11 +276,11 @@ final class SignupTest extends TestCase
             'Email already exists.',
             $response['body']['message']
         );
-        
+
         $resultCount = $this->db->query(
             "SELECT COUNT(*) as count FROM users_table WHERE email = '" . self::TEST_EMAIL . "'"
         );
-        
+
         $userCount = (int) $resultCount->fetch_assoc()['count'];
 
         $this->assertSame(
@@ -282,6 +288,79 @@ final class SignupTest extends TestCase
             $userCount,
             'Expected exactly one user record; duplicate signup must not create a second user.'
         );
+    }
+
+    public function test_user_cannot_signup_with_social_account_email(): void
+    {
+        // Arrange
+        $stmt = $this->db->prepare(
+            "INSERT INTO users_table
+                (firstname, lastname, email, password, role, google_id, terms_accepted)
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
+        );
+
+        $firstname = 'Test';
+        $lastname = 'Login';
+        $email = self::TEST_EMAIL;
+        $password = null; // No password for social login
+        $role = 'job_seeker';
+        $googleId = '6rXy4AnZeRTKbPKlR194o68wC9X2';
+        $terms = 1;
+
+        $stmt->bind_param(
+            'ssssssi',
+            $firstname,
+            $lastname,
+            $email,
+            $password,
+            $role,
+            $googleId,
+            $terms
+        );
+
+        $stmt->execute();
+
+        $stmt->close();
+
+        // Act
+        $response = $this->postJson(
+            '/api/auth/signup.php',
+            [
+                'fname' => $firstname,
+                'lname' => $lastname,
+                'mail' => self::TEST_EMAIL,
+                'pword' => self::TEST_PASSWORD,
+                'role' => $role,
+                'terms' => $terms,
+            ]
+        );
+
+        // Assert
+        $this->assertSame(
+            409,
+            $response['statusCode'],
+            'Expected HTTP status code 409 for existing email.'
+        );
+
+        $this->assertFalse($response['body']['status']);
+
+        $this->assertSame(
+            'This email is already registered via Google/Facebook. Please log in using your social account or contact support to add a password.',
+            $response['body']['message']
+        );
+
+        $resultCount = $this->db->query(
+            "SELECT COUNT(*) as count FROM users_table WHERE email = '" . self::TEST_EMAIL . "'"
+        );
+
+        $userCount = (int) $resultCount->fetch_assoc()['count'];
+
+        $this->assertSame(
+            1,
+            $userCount,
+            'Expected exactly one user record; duplicate signup must not create a second user.'
+        );
+
     }
 
     private function postJson(string $path, array $payload): array
