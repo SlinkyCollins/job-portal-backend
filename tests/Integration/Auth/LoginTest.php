@@ -360,6 +360,18 @@ final class LoginTest extends TestCase
             self::TEST_EMAIL,
             $dashboard['body']['user']['email']
         );
+
+        $wrongRole = $this->getJson(
+            '/api/dashboard/employer/employer_dashboard.php',
+            $login['body']['token']
+        );
+
+        $this->assertSame(403, $wrongRole['statusCode']);
+        $this->assertFalse($wrongRole['body']['status']);
+        $this->assertSame(
+            'Access denied. Requires employer role.',
+            $wrongRole['body']['message']
+        );
     }
 
     private function postJson(string $path, array $payload): array
