@@ -6,3 +6,5 @@ $dotenv = Dotenv\Dotenv::createImmutable(
 );
 
 $dotenv->load();
+
+require_once __DIR__ . '/Integration/BaseTestCase.php';

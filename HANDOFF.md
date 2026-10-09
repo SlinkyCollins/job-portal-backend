@@ -69,6 +69,7 @@ We are in **TEST / BASELINE**, working through the critical-behavior checklist.
 10. Job listing/search/filtering — basic coverage complete.
 11. Job details — basic coverage complete.
 12. Job application — basic coverage complete.
+13. Application ownership / employer access control — basic coverage complete.
 
 ### Deliberately deferred
 
@@ -80,9 +81,9 @@ These items are deferred. **Do not reassess, reopen, or implement them as part o
 
 Authentication and authorization (#6–7) have basic coverage that is sufficient for now. Some security edge cases remain, including expired tokens, malformed tokens, missing Authorization headers, and suspended-user access. These can be addressed later if relevant to migration risk, but they do not block progress to #8 or beyond.
 
-### Current task: #13 Application ownership / employer access control
+### Current task: #14 Resume upload
 
-Add focused automated tests for the existing application ownership and employer access control functionality to establish migration regression protection.
+Add focused automated tests for the existing resume upload functionality to establish migration regression protection.
 
 First inspect the existing implementation before writing tests.
 
@@ -90,11 +91,11 @@ First inspect the existing implementation before writing tests.
 
 11. **Job Details** — ✅ Basic coverage (3 tests, 31 assertions). Endpoint is public (no auth required). Tests cover: successful retrieval with field and company verification, non-existent job 404, missing ID 400. Computed flags (`hasApplied`, `isSaved`, `isRetracted`, `is_closed`) verified at defaults. Note: `salary_amount` returns as `"250000.00"` (MySQL DECIMAL format). Test file: `tests/Integration/Jobs/JobDetailsTest.php`.
 12. **Job Application** — ✅ Basic coverage (3 tests, 26 assertions). Endpoint requires `job_seeker` JWT auth. Uses `$_POST` (multipart/form-data), not JSON body. Tests cover: successful application with DB record verification (correct seeker/job association, pending status, cover letter), duplicate application rejection (400 + `hasApplied: true`), unauthenticated access denial (401). Uses default CV from `job_seekers_table` to avoid Cloudinary dependency. Test file: `tests/Integration/Jobs/JobApplicationTest.php`.
+13. **Application Ownership / Employer Access Control** — ✅ Basic coverage (4 tests, 52 assertions). Endpoints: GET `/api/dashboard/employer/get_applications.php` and POST `/api/dashboard/employer/update_application_status.php`. Both require `employer` JWT auth. Tests cover: (1) isolation in viewing applications (Employer 1 only receives applications for their own jobs, Employer 2 only receives applications for their own jobs, retracted applications excluded), (2) unauthorized cross-employer status updates return 403 Forbidden with database state unchanged, (3) authorized status updates by owning employer return 200 OK with database state updated to 'shortlisted', (4) non-employer access denial (seeker gets 403, unauthenticated gets 401). Test file: `tests/Integration/Jobs/ApplicationOwnershipTest.php`.
 
 ### Next steps
 
 Proceed sequentially through the remaining critical checklist:
-
 
 14. **Resume upload**
 15. **Admin authorization**
@@ -105,8 +106,7 @@ For each task, inspect the existing implementation, add only the smallest meanin
 
 Do not return to completed or deliberately deferred items unless explicitly instructed. The checklist is a map, not a quota.
 
-
-**Immediate next action:** Complete #13 Application ownership / employer access control. After verification, move to #14 Resume upload but wait for my instruction before you start working on it.
+**Immediate next action:** Complete #14 Resume upload, but wait for user instruction before starting.
 
 ## 5. Core Testing Principle
 
@@ -189,7 +189,7 @@ The priority labels guide effort. They are not a requirement to implement every 
 | 10 | Job listing/search/filtering | Basic coverage complete |
 | 11 | Job details | Basic coverage complete |
 | 12 | Job application | Basic coverage complete |
-| 13 | Application ownership/employer access control | Pending |
+| 13 | Application ownership/employer access control | Basic coverage complete |
 | 14 | Resume upload | Pending |
 | 15 | Admin authorization | Pending |
 | 16 | Admin user management | Pending |
@@ -250,7 +250,7 @@ Do not turn one feature into a comprehensive audit of the entire application.
 
 ## 9. Current Agent Instruction
 
-**Execute only the current checkpoint: #13 Application ownership/employer access control.**
+**Execute only the current checkpoint: #14 Resume upload.**
 
 Respect all constraints above. Afterward, report the result and recommend the next checkpoint. Do not begin another feature automatically.
 
