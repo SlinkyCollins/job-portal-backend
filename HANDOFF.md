@@ -67,6 +67,8 @@ We are in **TEST / BASELINE**, working through the critical-behavior checklist.
 8. Job creation — basic coverage complete.
 9. Job editing — basic coverage complete.
 10. Job listing/search/filtering — basic coverage complete.
+11. Job details — basic coverage complete.
+12. Job application — basic coverage complete.
 
 ### Deliberately deferred
 
@@ -78,32 +80,22 @@ These items are deferred. **Do not reassess, reopen, or implement them as part o
 
 Authentication and authorization (#6–7) have basic coverage that is sufficient for now. Some security edge cases remain, including expired tokens, malformed tokens, missing Authorization headers, and suspended-user access. These can be addressed later if relevant to migration risk, but they do not block progress to #8 or beyond.
 
-### Current task: #11 Job Details
+### Current task: #13 Application ownership / employer access control
 
-Add focused automated tests for the existing Job Details functionality to establish migration regression protection.
+Add focused automated tests for the existing application ownership and employer access control functionality to establish migration regression protection.
 
-First inspect the existing testing setup, routes, controller/handler, database queries, response structure, and applicable visibility or authorization rules.
+First inspect the existing implementation before writing tests.
 
-Cover, where applicable:
+### Completed
 
-- **Existing job:** Verify successful retrieval, the correct job, response structure, and a representative set of important fields.
-- **Missing job:** Verify the existing, intended not-found behavior.
-- **Authorization/visibility:** Test only if an applicable rule exists. Do not invent restrictions for public jobs.
-
-Use existing test conventions and deterministic test data.
-
-Do not expand beyond Job Details, refactor production code, introduce dependencies, change application behavior to satisfy tests, or fix unrelated issues. Report relevant discrepancies separately.
-
-Run the focused tests and relevant existing suite. Report the changed files, exact results, and what each test protects.
-
-**Definition of done:** Focused Job Details tests are verified, scope remains narrow, and we can proceed to Job Application without unnecessary additional testing work.
+11. **Job Details** — ✅ Basic coverage (3 tests, 31 assertions). Endpoint is public (no auth required). Tests cover: successful retrieval with field and company verification, non-existent job 404, missing ID 400. Computed flags (`hasApplied`, `isSaved`, `isRetracted`, `is_closed`) verified at defaults. Note: `salary_amount` returns as `"250000.00"` (MySQL DECIMAL format). Test file: `tests/Integration/Jobs/JobDetailsTest.php`.
+12. **Job Application** — ✅ Basic coverage (3 tests, 26 assertions). Endpoint requires `job_seeker` JWT auth. Uses `$_POST` (multipart/form-data), not JSON body. Tests cover: successful application with DB record verification (correct seeker/job association, pending status, cover letter), duplicate application rejection (400 + `hasApplied: true`), unauthenticated access denial (401). Uses default CV from `job_seekers_table` to avoid Cloudinary dependency. Test file: `tests/Integration/Jobs/JobApplicationTest.php`.
 
 ### Next steps
 
 Proceed sequentially through the remaining critical checklist:
 
-12. **Job application**
-13. **Application ownership / employer access control**
+
 14. **Resume upload**
 15. **Admin authorization**
 16. **Admin user management**
@@ -113,7 +105,8 @@ For each task, inspect the existing implementation, add only the smallest meanin
 
 Do not return to completed or deliberately deferred items unless explicitly instructed. The checklist is a map, not a quota.
 
-**Immediate next action:** Complete #11 Job Details. After verification, move to #12 Job Application but wait for my instruction before you start working on it.
+
+**Immediate next action:** Complete #13 Application ownership / employer access control. After verification, move to #14 Resume upload but wait for my instruction before you start working on it.
 
 ## 5. Core Testing Principle
 
@@ -194,8 +187,8 @@ The priority labels guide effort. They are not a requirement to implement every 
 | 8 | Job creation | Basic coverage complete |
 | 9 | Job editing | Basic coverage complete |
 | 10 | Job listing/search/filtering | Basic coverage complete |
-| 11 | Job details | Pending |
-| 12 | Job application | Pending |
+| 11 | Job details | Basic coverage complete |
+| 12 | Job application | Basic coverage complete |
 | 13 | Application ownership/employer access control | Pending |
 | 14 | Resume upload | Pending |
 | 15 | Admin authorization | Pending |
@@ -257,9 +250,7 @@ Do not turn one feature into a comprehensive audit of the entire application.
 
 ## 9. Current Agent Instruction
 
-**Execute only the current checkpoint: #5 Social account linking.**
-
-Inspect the existing implementation and test infrastructure, determine whether meaningful coverage is possible without live Firebase provider authentication, and either implement the minimal tests or document why the task should be deferred.
+**Execute only the current checkpoint: #13 Application ownership/employer access control.**
 
 Respect all constraints above. Afterward, report the result and recommend the next checkpoint. Do not begin another feature automatically.
 
