@@ -70,6 +70,7 @@ We are in **TEST / BASELINE**, working through the critical-behavior checklist.
 11. Job details — basic coverage complete.
 12. Job application — basic coverage complete.
 13. Application ownership / employer access control — basic coverage complete.
+14. Resume upload — basic coverage complete.
 
 ### Deliberately deferred
 
@@ -81,9 +82,9 @@ These items are deferred. **Do not reassess, reopen, or implement them as part o
 
 Authentication and authorization (#6–7) have basic coverage that is sufficient for now. Some security edge cases remain, including expired tokens, malformed tokens, missing Authorization headers, and suspended-user access. These can be addressed later if relevant to migration risk, but they do not block progress to #8 or beyond.
 
-### Current task: #14 Resume upload
+### Current task: #15 Admin authorization
 
-Add focused automated tests for the existing resume upload functionality to establish migration regression protection.
+Add focused automated tests for the existing admin authorization functionality to establish migration regression protection.
 
 First inspect the existing implementation before writing tests.
 
@@ -92,12 +93,12 @@ First inspect the existing implementation before writing tests.
 11. **Job Details** — ✅ Basic coverage (3 tests, 31 assertions). Endpoint is public (no auth required). Tests cover: successful retrieval with field and company verification, non-existent job 404, missing ID 400. Computed flags (`hasApplied`, `isSaved`, `isRetracted`, `is_closed`) verified at defaults. Note: `salary_amount` returns as `"250000.00"` (MySQL DECIMAL format). Test file: `tests/Integration/Jobs/JobDetailsTest.php`.
 12. **Job Application** — ✅ Basic coverage (3 tests, 26 assertions). Endpoint requires `job_seeker` JWT auth. Uses `$_POST` (multipart/form-data), not JSON body. Tests cover: successful application with DB record verification (correct seeker/job association, pending status, cover letter), duplicate application rejection (400 + `hasApplied: true`), unauthenticated access denial (401). Uses default CV from `job_seekers_table` to avoid Cloudinary dependency. Test file: `tests/Integration/Jobs/JobApplicationTest.php`.
 13. **Application Ownership / Employer Access Control** — ✅ Basic coverage (4 tests, 52 assertions). Endpoints: GET `/api/dashboard/employer/get_applications.php` and POST `/api/dashboard/employer/update_application_status.php`. Both require `employer` JWT auth. Tests cover: (1) isolation in viewing applications (Employer 1 only receives applications for their own jobs, Employer 2 only receives applications for their own jobs, retracted applications excluded), (2) unauthorized cross-employer status updates return 403 Forbidden with database state unchanged, (3) authorized status updates by owning employer return 200 OK with database state updated to 'shortlisted', (4) non-employer access denial (seeker gets 403, unauthenticated gets 401). Test file: `tests/Integration/Jobs/ApplicationOwnershipTest.php`.
+14. **Resume Upload** — ✅ Basic coverage (6 tests, 52 assertions). Endpoint: POST `/api/dashboard/seeker/upload_cv.php`. Requires `job_seeker` JWT auth. Supports deterministic Cloudinary test-double via `X-Mock-Cloudinary: true` header or `MOCK_CLOUDINARY=true` flag. Tests cover: (1) successful PDF upload updating `job_seekers_table` with download URL (`fl_attachment`), sanitized filename, and `cv_public_id`, (2) subsequent upload replacing old CV and generating new public_id, (3) rejection of disallowed MIME types (e.g. image/png) with 400 and database untouched, (4) rejection of missing filename with 400, (5) unauthenticated request rejected with 401, (6) non-seeker (employer) access rejected with 403. Test file: `tests/Integration/Seeker/ResumeUploadTest.php`.
 
 ### Next steps
 
 Proceed sequentially through the remaining critical checklist:
 
-14. **Resume upload**
 15. **Admin authorization**
 16. **Admin user management**
 17. **User deletion / associated-data cleanup**
@@ -106,7 +107,7 @@ For each task, inspect the existing implementation, add only the smallest meanin
 
 Do not return to completed or deliberately deferred items unless explicitly instructed. The checklist is a map, not a quota.
 
-**Immediate next action:** Complete #14 Resume upload, but wait for user instruction before starting.
+**Immediate next action:** Complete #15 Admin authorization, but wait for user instruction before starting.
 
 ## 5. Core Testing Principle
 
@@ -190,7 +191,7 @@ The priority labels guide effort. They are not a requirement to implement every 
 | 11 | Job details | Basic coverage complete |
 | 12 | Job application | Basic coverage complete |
 | 13 | Application ownership/employer access control | Basic coverage complete |
-| 14 | Resume upload | Pending |
+| 14 | Resume upload | Basic coverage complete |
 | 15 | Admin authorization | Pending |
 | 16 | Admin user management | Pending |
 | 17 | User deletion/associated-data cleanup | Pending |
@@ -250,7 +251,7 @@ Do not turn one feature into a comprehensive audit of the entire application.
 
 ## 9. Current Agent Instruction
 
-**Execute only the current checkpoint: #14 Resume upload.**
+**Execute only the current checkpoint: #15 Admin authorization.**
 
 Respect all constraints above. Afterward, report the result and recommend the next checkpoint. Do not begin another feature automatically.
 
