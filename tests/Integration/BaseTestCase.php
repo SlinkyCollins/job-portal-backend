@@ -173,6 +173,29 @@ abstract class BaseTestCase extends TestCase
 	// Factory / Seeding Helpers
 	// ------------------------------------------------------------------
 
+	protected function createAdmin(
+		string $email,
+		string $firstname = 'Test',
+		string $lastname = 'Admin',
+		string $password = self::DEFAULT_PASSWORD
+	): int {
+		$passwordHash = password_hash($password, PASSWORD_DEFAULT);
+		$role = 'admin';
+		$suspended = 0;
+
+		$statement = $this->db->prepare(
+			'INSERT INTO users_table
+				(firstname, lastname, email, password, role, suspended)
+			 VALUES (?, ?, ?, ?, ?, ?)'
+		);
+		$statement->bind_param('sssssi', $firstname, $lastname, $email, $passwordHash, $role, $suspended);
+		$statement->execute();
+		$userId = $this->db->insert_id;
+		$statement->close();
+
+		return $userId;
+	}
+
 	protected function createEmployer(
 		string $email,
 		string $firstname = 'Test',
