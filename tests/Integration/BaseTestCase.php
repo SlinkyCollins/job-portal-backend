@@ -121,6 +121,44 @@ abstract class BaseTestCase extends TestCase
 		];
 	}
 
+	protected function deleteJson(string $path, array $payload = [], ?string $token = null, array $extraHeaders = []): array
+	{
+		$ch = curl_init(self::BASE_URL . $path);
+		$headers = array_merge([
+			'Content-Type: application/json',
+			'Accept: application/json',
+		], $extraHeaders);
+
+		if ($token !== null) {
+			$headers[] = 'Authorization: Bearer ' . $token;
+		}
+
+		curl_setopt_array($ch, [
+			CURLOPT_CUSTOMREQUEST => 'DELETE',
+			CURLOPT_POSTFIELDS => json_encode($payload),
+			CURLOPT_HTTPHEADER => $headers,
+			CURLOPT_RETURNTRANSFER => true,
+		]);
+
+		$body = curl_exec($ch);
+		if ($body === false) {
+			$error = curl_error($ch);
+			curl_close($ch);
+			$this->fail('HTTP request failed: ' . $error);
+		}
+
+		$statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+
+		$decodedBody = json_decode($body, true);
+		$this->assertIsArray($decodedBody, 'API response was not valid JSON. Raw: ' . $body);
+
+		return [
+			'statusCode' => $statusCode,
+			'body' => $decodedBody,
+		];
+	}
+
 	protected function postForm(string $path, array $fields, ?string $token = null, array $extraHeaders = []): array
 	{
 		$ch = curl_init(self::BASE_URL . $path);
