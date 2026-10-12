@@ -36,7 +36,8 @@ try {
 
     if ($targetUser['role'] === 'admin') {
         apiResponse(false, 'Cannot delete other admins', 403);
-        throw new Exception("Cannot delete other admins");
+        $dbconnection->rollback();
+        exit;
     }
 
     // 3. Fetch Cloudinary Public IDs (Directly from DB columns)

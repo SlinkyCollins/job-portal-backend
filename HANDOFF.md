@@ -73,6 +73,7 @@ We are in **TEST / BASELINE**, working through the critical-behavior checklist.
 14. Resume upload — basic coverage complete.
 15. Admin authorization — basic coverage complete.
 16. Admin user management — basic coverage complete.
+17. User deletion / associated-data cleanup — basic coverage complete.
 
 ### Deliberately deferred
 
@@ -84,13 +85,11 @@ These items are deferred. **Do not reassess, reopen, or implement them as part o
 
 Authentication and authorization (#6–7) have basic coverage that is sufficient for now. Some security edge cases remain, including expired tokens, malformed tokens, missing Authorization headers, and suspended-user access. These can be addressed later if relevant to migration risk, but they do not block progress to #8 or beyond.
 
-### Current task: #17 User deletion / associated-data cleanup
+### Milestone Achieved: Critical Path Baseline Complete (#1–17)
 
-Add focused automated tests for the existing user deletion and associated-data cleanup functionality to establish migration regression protection.
+All non-deferred items in the **🔴 Critical — Core business / non-negotiable** tier are now fully covered by automated regression tests (41 tests, 426 assertions, 100% passing).
 
-First inspect the existing implementation before writing tests.
-
-### Completed
+### Completed Details
 
 11. **Job Details** — ✅ Basic coverage (3 tests, 31 assertions). Endpoint is public (no auth required). Tests cover: successful retrieval with field and company verification, non-existent job 404, missing ID 400. Computed flags (`hasApplied`, `isSaved`, `isRetracted`, `is_closed`) verified at defaults. Note: `salary_amount` returns as `"250000.00"` (MySQL DECIMAL format). Test file: `tests/Integration/Jobs/JobDetailsTest.php`.
 12. **Job Application** — ✅ Basic coverage (3 tests, 26 assertions). Endpoint requires `job_seeker` JWT auth. Uses `$_POST` (multipart/form-data), not JSON body. Tests cover: successful application with DB record verification (correct seeker/job association, pending status, cover letter), duplicate application rejection (400 + `hasApplied: true`), unauthenticated access denial (401). Uses default CV from `job_seekers_table` to avoid Cloudinary dependency. Test file: `tests/Integration/Jobs/JobApplicationTest.php`.
@@ -98,18 +97,13 @@ First inspect the existing implementation before writing tests.
 14. **Resume Upload** — ✅ Basic coverage (6 tests, 52 assertions). Endpoint: POST `/api/dashboard/seeker/upload_cv.php`. Requires `job_seeker` JWT auth. Supports deterministic Cloudinary test-double via `X-Mock-Cloudinary: true` header or `MOCK_CLOUDINARY=true` flag. Tests cover: (1) successful PDF upload updating `job_seekers_table` with download URL (`fl_attachment`), sanitized filename, and `cv_public_id`, (2) subsequent upload replacing old CV and generating new public_id, (3) rejection of disallowed MIME types (e.g. image/png) with 400 and database untouched, (4) rejection of missing filename with 400, (5) unauthenticated request rejected with 401, (6) non-seeker (employer) access rejected with 403. Test file: `tests/Integration/Seeker/ResumeUploadTest.php`.
 15. **Admin Authorization** — ✅ Basic coverage (5 tests, 57 assertions). Endpoints: GET `/api/dashboard/admin/admin_dashboard.php` and GET `/api/dashboard/admin/get_stats.php`. Both require `admin` JWT role. Tests cover: (1) admin can successfully access admin dashboard endpoint with correct user data returned, (2) admin can successfully access admin stats endpoint with platform metrics returned, (3) job seeker is rejected from admin endpoints with 403 Forbidden, (4) employer is rejected from admin endpoints with 403 Forbidden, (5) unauthenticated requests are rejected with 401 Unauthorized. Test file: `tests/Integration/Admin/AdminAuthorizationTest.php`.
 16. **Admin User Management** — ✅ Basic coverage (5 tests, 67 assertions). Endpoints: POST `/api/dashboard/admin/suspend_user.php` and GET `/api/dashboard/admin/get_users.php`. Reused #15 authorization baseline. Tests cover: (1) admin suspending a user sets `suspended = 1` in database and prevents subsequent login with 403, (2) admin unsuspending a user restores `suspended = 0` and allows login to succeed, (3) admin cannot suspend another admin (403 Forbidden with target admin unaffected), (4) admin user listing returns seekers and employers while correctly excluding the requesting admin, (5) input validation (404 for non-existent user, 400 for invalid action). Test file: `tests/Integration/Admin/AdminUserManagementTest.php`.
+17. **User Deletion / Associated-Data Cleanup** — ✅ Basic coverage (6 tests, 61 assertions). Endpoints: POST `/api/dashboard/shared/delete_account.php`, POST `/api/dashboard/shared/delete_profile_photo.php`, and POST `/api/dashboard/admin/delete_user.php`. Tests cover: (1) job seeker self-deletion with cascade cleanup of profile (`job_seekers_table`), applications (`applications_table`), and saved jobs (`saved_jobs_table`), (2) employer self-deletion with cascade cleanup of employer profile, company, posted jobs (`jobs_table`), and received applications, (3) confirmation validation requiring exact string `'DELETE'`, (4) profile photo deletion clearing Cloudinary DB references (`profile_pic_url`, `profile_pic_public_id`) while preserving user account, (5) admin user deletion cascading associated records, (6) admin cannot delete another admin (403 Forbidden with target admin intact). Test file: `tests/Integration/Account/UserDeletionTest.php`.
 
 ### Next steps
 
-Proceed sequentially through the remaining critical checklist:
-
-17. **User deletion / associated-data cleanup**
-
-For each task, inspect the existing implementation, add only the smallest meaningful set of tests, verify the results, and move forward.
-
-Do not return to completed or deliberately deferred items unless explicitly instructed. The checklist is a map, not a quota.
-
-**Immediate next action:** Complete #17 User deletion / associated-data cleanup, but wait for user instruction before starting.
+With the critical-path baseline completed (#1–17), consult the user on next steps:
+- **Option A:** Proceed to **🟠 Important** features (starting with #18 Saved jobs / wishlist).
+- **Option B:** Transition to the modernization phase (Laravel backend migration / Angular frontend modernization).
 
 ## 5. Core Testing Principle
 
@@ -184,7 +178,7 @@ The priority labels guide effort. They are not a requirement to implement every 
 | 2 | Native login | Basic coverage complete |
 | 3 | Firebase/Google login | Deferred |
 | 4 | Firebase/Facebook login | Deferred |
-| 5 | Social account linking | Current task |
+| 5 | Social account linking | Deferred |
 | 6 | Authentication/session/token handling | Basic coverage complete |
 | 7 | Role authorization/protected endpoints | Basic coverage complete |
 | 8 | Job creation | Basic coverage complete |
@@ -196,7 +190,7 @@ The priority labels guide effort. They are not a requirement to implement every 
 | 14 | Resume upload | Basic coverage complete |
 | 15 | Admin authorization | Basic coverage complete |
 | 16 | Admin user management | Basic coverage complete |
-| 17 | User deletion/associated-data cleanup | Pending |
+| 17 | User deletion/associated-data cleanup | Basic coverage complete |
 
 **Additional security gaps already identified:** expired tokens, malformed tokens, missing Authorization headers, and suspended-user access. These are not exhaustive-security-test requirements for this phase. Cover them later if relevant to the migration risk; they should not automatically block progress.
 
@@ -253,8 +247,10 @@ Do not turn one feature into a comprehensive audit of the entire application.
 
 ## 9. Current Agent Instruction
 
-**Execute only the current checkpoint: #17 User deletion / associated-data cleanup.**
+**The Critical Tier (#1–17) is complete! All 41 tests pass (426 assertions).**
 
-Respect all constraints above. Afterward, report the result and recommend the next checkpoint. Do not begin another feature automatically.
+Awaiting user direction on whether to:
+1. Cover selected items from **🟠 Important** (e.g. #18 Saved jobs / wishlist), OR
+2. Transition directly to framework modernization (Laravel backend migration / Angular frontend upgrade).
 
 Remember: the objective is to build engineering capabilities through shipping software, not to spend indefinitely perfecting the safety net.

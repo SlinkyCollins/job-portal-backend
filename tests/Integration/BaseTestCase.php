@@ -83,13 +83,13 @@ abstract class BaseTestCase extends TestCase
 		];
 	}
 
-	protected function postJson(string $path, array $payload, ?string $token = null): array
+	protected function postJson(string $path, array $payload, ?string $token = null, array $extraHeaders = []): array
 	{
 		$ch = curl_init(self::BASE_URL . $path);
-		$headers = [
+		$headers = array_merge([
 			'Content-Type: application/json',
 			'Accept: application/json',
-		];
+		], $extraHeaders);
 
 		if ($token !== null) {
 			$headers[] = 'Authorization: Bearer ' . $token;

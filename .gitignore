@@ -2,3 +2,4 @@
 /config/jobnet-af0a7-firebase-adminsdk-fbsvc-71e1856708.json
 .env
 .env.testing
+.phpunit.cache/
