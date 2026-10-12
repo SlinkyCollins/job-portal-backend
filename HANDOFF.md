@@ -75,6 +75,7 @@ We are in **TEST / BASELINE**, working through the critical-behavior checklist.
 16. Admin user management — basic coverage complete.
 17. User deletion / associated-data cleanup — basic coverage complete.
 18. Saved jobs / wishlist — basic coverage complete.
+22. Company profile management — basic coverage complete.
 
 ### Deliberately deferred
 
@@ -86,9 +87,9 @@ These items are deferred. **Do not reassess, reopen, or implement them as part o
 
 Authentication and authorization (#6–7) have basic coverage that is sufficient for now. Some security edge cases remain, including expired tokens, malformed tokens, missing Authorization headers, and suspended-user access. These can be addressed later if relevant to migration risk, but they do not block progress to #8 or beyond.
 
-### Milestone Achieved: Critical Path Baseline Complete (#1–17) + First Important Checkpoint (#18)
+### Milestone Achieved: Critical Path Baseline Complete (#1–17) + Important Checkpoints (#18, #22)
 
-All non-deferred items in the **🔴 Critical — Core business / non-negotiable** tier, plus **#18 Saved jobs / wishlist**, are now fully covered by automated regression tests (46 tests, 514 assertions, 100% passing).
+All non-deferred items in the **🔴 Critical — Core business / non-negotiable** tier, plus **#18 Saved jobs / wishlist** and **#22 Company profile management**, are now fully covered by automated regression tests (51 tests, 593 assertions, 100% passing).
 
 ### Completed Details
 
@@ -100,11 +101,12 @@ All non-deferred items in the **🔴 Critical — Core business / non-negotiable
 16. **Admin User Management** — ✅ Basic coverage (5 tests, 67 assertions). Endpoints: POST `/api/dashboard/admin/suspend_user.php` and GET `/api/dashboard/admin/get_users.php`. Reused #15 authorization baseline. Tests cover: (1) admin suspending a user sets `suspended = 1` in database and prevents subsequent login with 403, (2) admin unsuspending a user restores `suspended = 0` and allows login to succeed, (3) admin cannot suspend another admin (403 Forbidden with target admin unaffected), (4) admin user listing returns seekers and employers while correctly excluding the requesting admin, (5) input validation (404 for non-existent user, 400 for invalid action). Test file: `tests/Integration/Admin/AdminUserManagementTest.php`.
 17. **User Deletion / Associated-Data Cleanup** — ✅ Basic coverage (6 tests, 61 assertions). Endpoints: POST `/api/dashboard/shared/delete_account.php`, POST `/api/dashboard/shared/delete_profile_photo.php`, and POST `/api/dashboard/admin/delete_user.php`. Tests cover: (1) job seeker self-deletion with cascade cleanup of profile (`job_seekers_table`), applications (`applications_table`), and saved jobs (`saved_jobs_table`), (2) employer self-deletion with cascade cleanup of employer profile, company, posted jobs (`jobs_table`), and received applications, (3) confirmation validation requiring exact string `'DELETE'`, (4) profile photo deletion clearing Cloudinary DB references (`profile_pic_url`, `profile_pic_public_id`) while preserving user account, (5) admin user deletion cascading associated records, (6) admin cannot delete another admin (403 Forbidden with target admin intact). Test file: `tests/Integration/Account/UserDeletionTest.php`.
 18. **Saved Jobs / Wishlist** — ✅ Basic coverage (5 tests, 88 assertions). Endpoints: POST `/api/jobs/wishlist.php`, DELETE `/api/jobs/wishlist_delete.php`, and GET `/api/dashboard/seeker/saved_jobs.php`. Tests cover: (1) seeker saving a job persists to `saved_jobs_table` and duplicate saves return 400 with `'You have already saved this job.'`, (2) seeker unsaving a job removes it from `saved_jobs_table`, (3) saved jobs retrieval returns full job schema, pagination metadata, and company information, (4) cross-user isolation: users can only see their own saved jobs and cannot delete another user's saved jobs, (5) role authorization and input validation: unauthenticated requests get 401, missing `jobId` gets 400, and non-seeker roles get 403. Test file: `tests/Integration/Seeker/SavedJobsTest.php`.
+22. **Company Profile Management** — ✅ Basic coverage (5 tests, 79 assertions). Endpoints: POST `/api/dashboard/employer/save_company_profile.php` and GET `/api/dashboard/employer/get_company_profile.php`. Tests cover: (1) employer successfully updating existing company profile (`name`, `location`, `website`, `description`) with database persistence and matching retrieval via `get_company_profile.php`, (2) strict user-to-company ownership scoping: updates are keyed exclusively to the authenticated employer's JWT ID (`WHERE user_id = ?`), leaving other employers' companies intact, (3) creating a new company profile when none exists and automatically linking `employers_table.company_id`, (4) required fields validation (`name`, `location`, `description`) returning 400 with DB unchanged, (5) role authorization and unauthenticated rejection (401 unauth, 403 seeker). Test file: `tests/Integration/Employer/CompanyProfileTest.php`.
 
 ### Next steps
 
-With #18 covered, proceed according to project priorities:
-- **Option A:** Proceed with other **🟠 Important** items (e.g. #19 Employer dashboard data, #20 Seeker dashboard data, #21 Admin dashboard stats, or #22 Company profile management).
+With #18 and #22 covered, proceed according to project priorities:
+- **Option A:** Proceed with other **🟠 Important** items (e.g. #19 Employer dashboard data, #20 Seeker dashboard data, #21 Admin dashboard stats).
 - **Option B:** Transition to the modernization phase (Laravel backend migration / Angular frontend modernization).
 
 ## 5. Core Testing Principle
@@ -204,7 +206,7 @@ The priority labels guide effort. They are not a requirement to implement every 
 19. Employer dashboard data  
 20. Seeker dashboard data  
 21. Admin dashboard statistics  
-22. Company profile management  
+22. Company profile management — ✅ Basic coverage complete
 23. Profile/account settings  
 24. Cloudinary uploads/deletions  
 25. Salary normalization/conversion  
@@ -249,10 +251,10 @@ Do not turn one feature into a comprehensive audit of the entire application.
 
 ## 9. Current Agent Instruction
 
-**Baseline Safety Net Complete: #1–18 (46 tests, 514 assertions, 100% passing).**
+**Baseline Safety Net Complete: #1–18, #22 (51 tests, 593 assertions, 100% passing).**
 
 Awaiting user direction on whether to:
-1. Cover additional items from **🟠 Important** (e.g. #19 Employer dashboard data, #20 Seeker dashboard data, #22 Company profile), OR
+1. Cover additional items from **🟠 Important** (e.g. #19 Employer dashboard data, #20 Seeker dashboard data, #21 Admin dashboard stats), OR
 2. Transition directly to framework modernization (Laravel backend migration / Angular frontend upgrade).
 
 Remember: the objective is to build engineering capabilities through shipping software, not to spend indefinitely perfecting the safety net.
