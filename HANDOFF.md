@@ -77,6 +77,7 @@ We are in **TEST / BASELINE**, working through the critical-behavior checklist.
 18. Saved jobs / wishlist — basic coverage complete.
 22. Company profile management — basic coverage complete.
 25. Salary normalization/conversion — basic coverage complete.
+26. Pagination/sorting/filtering — basic coverage complete.
 
 ### Deliberately deferred
 
@@ -88,12 +89,13 @@ These items are deferred. **Do not reassess, reopen, or implement them as part o
 
 Authentication and authorization (#6–7) have basic coverage that is sufficient for now. Some security edge cases remain, including expired tokens, malformed tokens, missing Authorization headers, and suspended-user access. These can be addressed later if relevant to migration risk, but they do not block progress to #8 or beyond.
 
-### Milestone Achieved: Critical Path Baseline Complete (#1–17) + Important Checkpoints (#18, #22, #25)
+### Milestone Achieved: Critical Path Baseline Complete (#1–17) + Important Checkpoints (#18, #22, #25, #26)
 
-All non-deferred items in the **🔴 Critical — Core business / non-negotiable** tier, plus **#18 Saved jobs / wishlist**, **#22 Company profile management**, and **#25 Salary normalization/conversion**, are now fully covered by automated regression tests (56 tests, 644 assertions, 100% passing).
+All non-deferred items in the **🔴 Critical — Core business / non-negotiable** tier, plus **#18 Saved jobs / wishlist**, **#22 Company profile management**, **#25 Salary normalization/conversion**, and **#26 Pagination/sorting/filtering**, are now fully covered by automated regression tests (60 tests, 686 assertions, 100% passing).
 
 ### Completed Details
 
+10 / 26. **Job Listing / Pagination, Sorting & Filtering** — ✅ Comprehensive coverage (5 tests, 56 assertions). Endpoint: GET `/api/jobs/all_jobs.php`. Tests cover: (1) keyword search across title, overview, and description with field and computed flag assertions, (2) multi-page pagination with `page` and `per_page` returning distinct non-overlapping slices alongside correct envelope metadata (`page`, `per_page`, `total`, `total_pages`), (3) sorting by `datePosted` (`published_at DESC`) and `relevance` (`title ASC`), (4) multi-parameter filtering by `location` (LIKE), `employment_type` (IN clause), and `experience_level` (IN clause), (5) strict exclusion of closed (`status = 'closed'`) and expired (`deadline < NOW()`) jobs from public search results. Test file: `tests/Integration/Jobs/JobListingTest.php`.
 11. **Job Details** — ✅ Basic coverage (3 tests, 31 assertions). Endpoint is public (no auth required). Tests cover: successful retrieval with field and company verification, non-existent job 404, missing ID 400. Computed flags (`hasApplied`, `isSaved`, `isRetracted`, `is_closed`) verified at defaults. Note: `salary_amount` returns as `"250000.00"` (MySQL DECIMAL format). Test file: `tests/Integration/Jobs/JobDetailsTest.php`.
 12. **Job Application** — ✅ Basic coverage (3 tests, 26 assertions). Endpoint requires `job_seeker` JWT auth. Uses `$_POST` (multipart/form-data), not JSON body. Tests cover: successful application with DB record verification (correct seeker/job association, pending status, cover letter), duplicate application rejection (400 + `hasApplied: true`), unauthenticated access denial (401). Uses default CV from `job_seekers_table` to avoid Cloudinary dependency. Test file: `tests/Integration/Jobs/JobApplicationTest.php`.
 13. **Application Ownership / Employer Access Control** — ✅ Basic coverage (4 tests, 52 assertions). Endpoints: GET `/api/dashboard/employer/get_applications.php` and POST `/api/dashboard/employer/update_application_status.php`. Both require `employer` JWT auth. Tests cover: (1) isolation in viewing applications (Employer 1 only receives applications for their own jobs, Employer 2 only receives applications for their own jobs, retracted applications excluded), (2) unauthorized cross-employer status updates return 403 Forbidden with database state unchanged, (3) authorized status updates by owning employer return 200 OK with database state updated to 'shortlisted', (4) non-employer access denial (seeker gets 403, unauthenticated gets 401). Test file: `tests/Integration/Jobs/ApplicationOwnershipTest.php`.
@@ -212,7 +214,7 @@ The priority labels guide effort. They are not a requirement to implement every 
 23. Profile/account settings  
 24. Cloudinary uploads/deletions  
 25. Salary normalization/conversion — ✅ Basic coverage complete
-26. Pagination/sorting/filtering  
+26. Pagination/sorting/filtering — ✅ Basic coverage complete
 27. Job application status changes  
 
 Salary normalization is business logic and should not be dismissed as merely a UI concern.
@@ -253,10 +255,10 @@ Do not turn one feature into a comprehensive audit of the entire application.
 
 ## 9. Current Agent Instruction
 
-**Baseline Safety Net Complete: #1–18, #22, #25 (56 tests, 644 assertions, 100% passing).**
+**Baseline Safety Net Complete: #1–18, #22, #25, #26 (60 tests, 686 assertions, 100% passing).**
 
 Awaiting user direction on whether to:
-1. Cover additional items from **🟠 Important** (e.g. #19 Employer dashboard data, #20 Seeker dashboard data, #21 Admin dashboard stats), OR
+1. Cover any remaining critical gap, OR
 2. Transition directly to framework modernization (Laravel backend migration / Angular frontend upgrade).
 
 Remember: the objective is to build engineering capabilities through shipping software, not to spend indefinitely perfecting the safety net.
