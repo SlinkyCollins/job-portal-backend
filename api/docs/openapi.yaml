@@ -16,6 +16,8 @@ servers:
     description: Production
 
 tags:
+  - name: Operations
+    description: Service health and readiness checks
   - name: Auth
     description: Authentication and session endpoints
   - name: Jobs
@@ -224,6 +226,27 @@ components:
       required: [jobId]
 
 paths:
+  /api/ready.php:
+    get:
+      tags: [Operations]
+      summary: Check service and database readiness
+      description: Runs a lightweight `SELECT 1` query against the configured MySQL database.
+      responses:
+        '200':
+          description: Service and database are ready
+          content:
+            application/json:
+              example:
+                status: true
+                message: Service ready
+                database: connected
+        '503':
+          description: Database is unavailable
+          content:
+            application/json:
+              example:
+                status: false
+                message: Database connection failed
   /api/auth/signup.php:
     post:
       tags: [Auth]
@@ -2276,4 +2299,3 @@ paths:
               example:
                 status: false
                 message: "Delete failed: User not found or already deleted"
-
