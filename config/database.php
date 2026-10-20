@@ -42,21 +42,27 @@ if ($env === 'production') {
 }
 
 // --- MYSQLI CONNECTION ---
-$dbconnection = mysqli_init();
-if (!$dbconnection) {
-    apiResponse(false, 'Database init failed', 500);
-    exit;
-}
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-if ($useSSL) {
-    $dbconnection->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
-    $dbconnection->ssl_set(null, null, $caCert, null, null);
-    $connectFlags = MYSQLI_CLIENT_SSL;
-} else {
-    $connectFlags = 0; // No SSL for local
-}
+try {
+    $dbconnection = mysqli_init();
+    if (!$dbconnection) {
+        throw new mysqli_sql_exception('Database initialization failed');
+    }
 
-if (!$dbconnection->real_connect($host, $user, $pass, $db, $port, null, $connectFlags)) {
+    if ($useSSL) {
+        $dbconnection->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
+        $dbconnection->ssl_set(null, null, $caCert, null, null);
+        $connectFlags = MYSQLI_CLIENT_SSL;
+    } else {
+        $connectFlags = 0;
+    }
+
+    if (!$dbconnection->real_connect('p:' . $host, $user, $pass, $db, $port, null, $connectFlags)) {
+        throw new mysqli_sql_exception('Database connection failed');
+    }
+} catch (mysqli_sql_exception $exception) {
+    error_log('Database connection failed: ' . $exception->getMessage());
     apiResponse(false, 'Database connection failed', 500);
     exit;
-};
+}
